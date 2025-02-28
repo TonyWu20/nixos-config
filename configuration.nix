@@ -137,6 +137,7 @@
     fishPlugins.fzf-fish
     fishPlugins.z
     fishPlugins.done
+    fishPlugins.forgit
     ripgrep
     fd
     skim
