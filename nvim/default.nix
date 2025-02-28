@@ -10,10 +10,15 @@ let
   inherit (lib.types) listOf coercedTo package functionTo;
 in
 {
-  programs.neovim.nvimdots = {
-    enable = true;
-    setBuildEnv = true;
-    withBuildTools = true;
+  home.packages = with pkgs; [
+    python3
+  ];
+  programs.neovim = {
+    nvimdots = {
+      enable = true;
+      setBuildEnv = true;
+      withBuildTools = true;
+    };
     extraPackages = with pkgs; [
       go
       python3

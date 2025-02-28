@@ -45,6 +45,7 @@ in
     fastfetch
     yazi # terminal file manager
     git-credential-manager
+    gh
 
     # archives
     zip
