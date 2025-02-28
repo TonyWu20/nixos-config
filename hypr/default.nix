@@ -3,6 +3,7 @@
     ./bind.nix
     ./general.nix
     ./display.nix
+    ./hyprpaper.nix
   ];
 
   wayland.windowManager.hyprland.enable = true;
@@ -19,6 +20,7 @@
       "waybar"
       "fcitx5 -r -d"
       "dunst"
+      "hyprpaper"
     ];
     input = {
       numlock_by_default = true;
