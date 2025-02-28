@@ -1,5 +1,4 @@
 local wezterm = require("wezterm")
-local gruvbox_dark = wezterm.get_builtin_color_schemes()["Gruvbox Dark"]
 
 wezterm.on("user-var-changed", function(window, pane, name, value)
 	local overrides = window:get_config_overrides() or {}
@@ -34,7 +33,7 @@ return {
 	font = wezterm.font_with_fallback({ "Hack Nerd Font", "Symbols Nerd Font" }),
 	front_end = "WebGpu",
 	window_background_opacity = 1,
-	font_size = 21,
+	font_size = 16,
 	line_height = 1.0,
 	-- color_scheme = "Gruvbox Dark",
 	color_scheme = "Catppuccin Macchiato",
