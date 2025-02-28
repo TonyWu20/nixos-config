@@ -7,6 +7,8 @@ in
     ./starship.nix
     ./nvim
     ./hypr
+    ./wezterm
+    ./tmux
   ];
   # TODO please change the username & home directory to your own
   home.username = "tony";
@@ -60,6 +62,13 @@ in
     skim
     nushell
     nushellPlugins.skim
+
+    # fonts
+    nerd-fonts.hack
+    nerd-fonts.symbols-only
+    noto-fonts-cjk-serif
+    noto-fonts-cjk-sans
+
 
     # networking tools
     aria2 # A lightweight multi-protocol & multi-source command-line download utility
@@ -135,13 +144,15 @@ in
       hostname = "github.com";
       identityFile = "~/.ssh/id_ed25519";
     };
+    matchBlocks.mac = {
+      host = "mac";
+      user = "tonywu";
+      hostname = "10.147.17.25";
+      identityFile = "~/.ssh/id_ed25519";
+    };
   };
 
   # starship - an customizable prompt for any shell
-  programs.wezterm = {
-    enable = true;
-    # extraConfig = builtins.readFile ./wezterm.lua;
-  };
 
   programs.fish = {
     enable = true;

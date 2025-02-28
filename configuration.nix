@@ -111,13 +111,17 @@
   programs.tmux = {
     enable = true;
     keyMode = "vi";
+    terminal = "xterm-256colors";
     plugins = with pkgs; [
       tmuxPlugins.resurrect
       tmuxPlugins.net-speed
       tmuxPlugins.mode-indicator
-      tmuxPlugins.cpu
+      tmuxPlugins.yank
+      tmuxPlugins.sensible
+      # tmux-mem-cpu-load
       tmuxPlugins.catppuccin
     ];
+    extraConfig = "set -g @catppuccin-flavor macchiato";
 
   };
 
