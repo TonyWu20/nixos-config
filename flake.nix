@@ -48,14 +48,16 @@
           {
             home-manager.useGlobalPkgs = true;
             home-manager.useUserPackages = true;
+            home-manager.sharedModules = [
+              inputs.nvimdots.homeManagerModules.nvimdots
+            ];
 
             # TODO replace ryan with your own username
             home-manager.users.tony = {
               imports = [
                 ./home.nix
-                inputs.nvimdots.homeManagerModules.nvimdots
+                ./nvim/nvimdots.nix
               ];
-
             };
             home-manager.backupFileExtension = "backup";
 

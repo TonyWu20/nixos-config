@@ -94,6 +94,7 @@
     openssh.authorizedKeys.keys = [
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMqIz6gNydwx4jPWhusIUBHY0eWG92uVsl4zHsGdOCHG tony.w21@gmail.com= tony"
     ];
+    shell = pkgs.fish;
   };
   # home-manager.users.tony = { pkgs, ...}: {
   # home.packages = with pkgs; [
@@ -106,6 +107,19 @@
 
   programs.firefox.enable = true;
   programs.hyprland.enable = true;
+  programs.fish.enable = true;
+  programs.tmux = {
+    enable = true;
+    keyMode = "vi";
+    plugins = with pkgs; [
+      tmuxPlugins.resurrect
+      tmuxPlugins.net-speed
+      tmuxPlugins.mode-indicator
+      tmuxPlugins.cpu
+      tmuxPlugins.catppuccin
+    ];
+
+  };
 
 
 
@@ -114,7 +128,11 @@
   environment.systemPackages = with pkgs; [
     neovim # Do not forget to add an editor to edit configuration.nix! The Nano editor is also installed by default.
     wget
+    # fish
     fish
+    fishPlugins.fzf-fish
+    fishPlugins.z
+    fishPlugins.done
     ripgrep
     fd
     skim
@@ -123,6 +141,7 @@
     wezterm
     fcitx5
     fcitx5-rime
+    catppuccin-fcitx5
     hyprland
     tmux
     wl-clipboard-rs

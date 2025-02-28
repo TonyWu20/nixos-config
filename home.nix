@@ -119,6 +119,12 @@ in
     userEmail = "tony.w21@gmail.com";
   };
 
+  programs.gh = {
+    enable = true;
+    gitCredentialHelper.enable = true;
+    settings.editor = "nvim";
+  };
+
   programs.ssh = {
     enable = true;
     forwardAgent = true;
