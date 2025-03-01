@@ -50,18 +50,48 @@
   # networking.proxy.noProxy = "127.0.0.1,localhost,internal.domain";
 
   # Select internationalisation properties.
-  # i18n.defaultLocale = "en_US.UTF-8";
+  i18n = {
+    defaultLocale = "en_US.UTF-8";
+    supportedLocales = [
+      "en_US.UTF-8/UTF-8"
+      "zh_CN.UTF-8/UTF-8"
+    ];
+    inputMethod = {
+      enable = true;
+      type = "fcitx5";
+      fcitx5 = {
+        addons = with pkgs; [
+          fcitx5-chinese-addons
+          fcitx5-rime
+          catppuccin-fcitx5
+        ];
+        waylandFrontend = true;
+        settings = {
+          addons = {
+            classicui.globalSection.Theme = "catppuccin-macchiato-maroon";
+            classicui.globalSection.DarkTheme = "catppuccin-macchiato-maroon";
+          };
+          globalOptions = { "Hotkey/TriggerKeys" = { "0" = "Control+space"; }; };
+          inputMethod = {
+            "Groups/0" = {
+              Name = "Default";
+              "Default Layout" = "us";
+              DefaultIM = "keyboard-us";
+            };
+            "Groups/0/Items/0".Name = "keyboard-us";
+            "Groups/0/Items/1".Name = "Rime";
+            GroupOrder."0" = "Default";
+          };
+        };
+      };
+    };
+  };
   # console = {
   #   font = "Lat2-Terminus16";
   #   keyMap = "us";
   #   useXkbConfig = true; # use xkb.options in tty.
   # };
 
-  i18n.inputMethod = {
-    enable = true;
-    type = "fcitx5";
-    fcitx5.addons = with pkgs; [ fcitx5-rime ];
-  };
 
   # Enable the X11 windowing system.
   # services.xserver.enable = true;
@@ -144,9 +174,6 @@
     greetd.greetd
     zerotierone
     wezterm
-    fcitx5
-    fcitx5-rime
-    catppuccin-fcitx5
     hyprland
     tmux
     wl-clipboard-rs
