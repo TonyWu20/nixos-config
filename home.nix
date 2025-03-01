@@ -11,6 +11,7 @@ in
     ./tmux
     ./fish
     ./rime
+    ./waybar
   ];
   # TODO please change the username & home directory to your own
   home.username = "tony";
