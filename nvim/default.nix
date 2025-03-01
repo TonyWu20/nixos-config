@@ -11,6 +11,7 @@ let
 in
 {
   programs.neovim = {
+    # enable = true;
     # extraPackages = with pkgs; [
     #   go
     #   python3

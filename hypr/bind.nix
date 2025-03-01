@@ -5,6 +5,7 @@
       "$mainMod, Q, exec, $terminal"
       "$mainMod, C, killactive"
       "$mainMod, M, exit"
+      "$mainMod, T, exec, firefox"
       "ALT, SPACE, exec, $menu |xargs hyprctl dispatch exec --"
       "ALT, t, movefocus, l"
       "ALT, r, movefocus, r"

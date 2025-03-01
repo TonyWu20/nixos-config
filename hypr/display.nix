@@ -21,7 +21,7 @@
       new_status = "slave";
       allow_small_split = "true";
       orientation = "right";
-      mfact = 0.66;
+      mfact = 0.6666666;
     };
   };
 }

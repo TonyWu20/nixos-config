@@ -3,10 +3,10 @@
     enable = true;
     settings = {
       preload = [
-        "./azukisan_2025Feb.jpeg"
+        "/home/tony/nixos-config/hypr/azukisan_2025Feb.jpeg"
       ];
       wallpaper = [
-        "./azukisan_2025Feb.jpeg"
+        "/home/tony/nixos-config/hypr/azukisan_2025Feb.jpeg"
       ];
 
     };

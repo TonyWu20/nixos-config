@@ -10,6 +10,7 @@ in
     ./wezterm
     ./tmux
     ./fish
+    ./rime
   ];
   # TODO please change the username & home directory to your own
   home.username = "tony";
