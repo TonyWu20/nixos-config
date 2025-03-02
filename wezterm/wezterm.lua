@@ -30,14 +30,14 @@ wezterm.on("user-var-changed", function(window, pane, name, value)
 end)
 return {
 	-- font = wezterm.font("JetBrainsMono Nerd Font Mono"),
-	font = wezterm.font_with_fallback({ "Hack Nerd Font", "Symbols Nerd Font" }),
+	font = wezterm.font_with_fallback({ "Hack Nerd Font", "Symbols Nerd Font", "NotoSansCJK" }),
 	front_end = "WebGpu",
 	window_background_opacity = 0.8,
 	font_size = 16,
 	line_height = 1.0,
 	-- color_scheme = "Gruvbox Dark",
 	color_scheme = "Catppuccin Macchiato",
-	window_decorations = "RESIZE",
+	window_decorations = "NONE",
 	max_fps = 120,
 	hide_tab_bar_if_only_one_tab = true,
 	use_fancy_tab_bar = true,
