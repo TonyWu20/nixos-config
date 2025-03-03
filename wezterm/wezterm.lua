@@ -30,7 +30,7 @@ wezterm.on("user-var-changed", function(window, pane, name, value)
 end)
 return {
 	-- font = wezterm.font("JetBrainsMono Nerd Font Mono"),
-	font = wezterm.font_with_fallback({ "Hack Nerd Font", "Symbols Nerd Font", "NotoSansCJK" }),
+	font = wezterm.font_with_fallback({ "Hack Nerd Font", "Symbols Nerd Font", "Noto Sans CJK SC", "Noto Sans CJK HK" }),
 	front_end = "WebGpu",
 	window_background_opacity = 0.8,
 	font_size = 16,
