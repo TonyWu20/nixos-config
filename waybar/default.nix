@@ -1,8 +1,14 @@
-{ config, home, ... }: {
-  home.file.".config/waybar/wittr.sh".source = ./wittr.sh;
+{ config, home, pkgs, ... }: {
+  home.file.".config/waybar/wittr.sh" = {
+    source = ./wittr.sh;
+    executable = true;
+  };
   home.file.".config/waybar/colors.css".source = ./colors.css;
   home.file.".config/waybar/style.css".source = ./style.css;
-  home.file.".config/waybar/gpu.sh".source = ./gpu.sh;
+  home.file.".config/waybar/gpu.sh" = {
+    source = ./gpu.sh;
+    executable = true;
+  };
   programs.waybar = {
     enable = true;
     settings = {
@@ -18,7 +24,7 @@
         modules-right = [ "custom/weather" ];
         "custom/weather" = {
           "interval" = 60;
-          "exec" = "bash ~/.config/waybar/wittr.sh 'Kowloon'";
+          "exec" = "${pkgs.bash}/bin/bash ~/.config/waybar/wittr.sh 'Kowloon'";
           "return-type" = "json";
           "format" = "{}";
           "tooltip" = true;
@@ -111,7 +117,7 @@
         };
         "memory" = {
           "interval" = 3;
-          "format" = "{}% ";
+          "format" = "{}%  ";
           "on-click" = "foot --app-id htop htop";
           "tooltip-format" = "Used: {used:0.1f}G/{total:0.1f}G. Swap: {swapUsed:0.1f}G/{swapTotal:0.1f}G";
           "states" = {
@@ -132,7 +138,7 @@
         };
         "disk#ssd" = {
           "interval" = 60;
-          "format" = "{path} {free} ";
+          "format" = "{path} {free}  ";
           "path" = "/";
           "tooltip" = true;
           "warning" = 80;
@@ -143,15 +149,15 @@
           "interface-ethernet" = "enp1s*";
           "interface-wifi" = "wlan0";
           "format-ethernet" = "eth ";
-          "format-wifi" = "{essid} ({signalStrength}%) ";
+          "format-wifi" = "{essid} ({signalStrength}%)  ";
           "tooltip-format-ethernet" = "{ifname}: {ipaddr}/{cidr} ";
-          "tooltip-format-wifi" = "{ifname}: {ipaddr}/{cidr} ";
+          "tooltip-format-wifi" = "{ifname}: {ipaddr}/{cidr}  ";
           "format-linked" = "(No IP) ";
           "format-disconnected" = "Disconnected ⚠";
         };
         "custom/nv-gpu" = {
           "interval" = 3;
-          "exec" = "bash ~/.config/waybar/gpu.sh";
+          "exec" = "${pkgs.bash}/bin/bash ~/.config/waybar/gpu.sh";
           "format" = "{}";
         };
         "custom/kernel" = {

@@ -18,6 +18,8 @@
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
 
+  boot.kernelPackages = pkgs.linuxPackages_6_12;
+
   hardware.graphics = {
     enable = true;
   };
@@ -34,7 +36,13 @@
     # accessible via `nvidia-settings`.
     nvidiaSettings = true;
 
-    package = config.boot.kernelPackages.nvidiaPackages.latest;
+    package = config.boot.kernelPackages.nvidiaPackages.mkDriver {
+      version = "570.86.16"; # use new 570 drivers
+      sha256_64bit = "sha256-RWPqS7ZUJH9JEAWlfHLGdqrNlavhaR1xMyzs8lJhy9U=";
+      openSha256 = "sha256-DuVNA63+pJ8IB7Tw2gM4HbwlOh1bcDg2AN2mbEU9VPE=";
+      settingsSha256 = "sha256-9rtqh64TyhDF5fFAYiWl3oDHzKJqyOW3abpcf2iNRT8=";
+      usePersistenced = false;
+    };
   };
 
   # networking.hostName = "nixos"; # Define your hostname.
@@ -132,6 +140,7 @@
   # List packages installed in system profile. To search, run:
   # $ nix search wget
   environment.systemPackages = with pkgs; [
+    linuxKernel.kernels.linux_6_12
     neovim # Do not forget to add an editor to edit configuration.nix! The Nano editor is also installed by default.
     wget
     # fish
@@ -172,8 +181,7 @@
   };
   services.zerotierone.enable = true;
   services.zerotierone.joinNetworks = [ "b15644912e4d3047" ];
-  services.rustdesk-server = { enable = true; };
-
+  # services.rustdesk-server = { enable = true; };
   services.greetd = {
     enable = true;
     settings = {

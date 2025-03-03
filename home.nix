@@ -13,6 +13,7 @@ in
     ./rime
     ./waybar
     ./fcitx5/home.nix
+    ./tex
   ];
   # TODO please change the username & home directory to your own
   home.username = "tony";
@@ -72,6 +73,8 @@ in
     nerd-fonts.symbols-only
     noto-fonts-cjk-serif
     noto-fonts-cjk-sans
+    source-han-sans-vf-ttf
+    source-han-mono
 
 
     # networking tools

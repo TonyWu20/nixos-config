@@ -233,11 +233,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1740974810,
-        "narHash": "sha256-qX9sXM6kwDqgTfSTCE4xqmGhtXL7FTn0MFSKCnyrS3Q=",
+        "lastModified": 1740991473,
+        "narHash": "sha256-QL+asaOp/VaBBfX/m1U/t6QnL3KxX1chnzQjsPpkE3Y=",
         "owner": "TonyWu20",
         "repo": "nvimdots",
-        "rev": "2f8fbbb485176b17cf7519e33967f33c3cecd96b",
+        "rev": "d0983101ebce3f3d25a91c40ff3089dc1e064f86",
         "type": "github"
       },
       "original": {
