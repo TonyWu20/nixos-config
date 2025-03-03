@@ -1,5 +1,6 @@
 { config, pkgs, lib, home, ... }:
 {
+  # 需要手动 rime_deploy 生成 build 文件夹方能生效?
   home.file.".local/share/rime-data" = {
     source = ./rime-data-myflypy/share/rime-data;
     recursive = true;
