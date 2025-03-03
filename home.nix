@@ -12,6 +12,7 @@ in
     ./fish
     ./rime
     ./waybar
+    ./fcitx5/home.nix
   ];
   # TODO please change the username & home directory to your own
   home.username = "tony";
