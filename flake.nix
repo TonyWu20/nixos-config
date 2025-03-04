@@ -19,7 +19,7 @@
     };
   };
 
-  outputs = inputs@{ self, nixpkgs, home-manager, fenix, ... }: {
+  outputs = inputs@{ self, nixpkgs, home-manager, fenix, catppuccin, ... }: {
     packages.x86_64-linux.default = fenix.packages.x86_64-linux.stable.toolchain;
     nixosConfigurations = {
       # Please replace my-nixos with your hostname
@@ -43,6 +43,8 @@
           # so the old configuration file still takes effect
           ./configuration.nix
           ./fcitx5
+          # catppuccin/nix
+          catppuccin.nixosModules.catppuccin
           # make home-manager as a module of nixos
           # so that home-manager configuration will be deployed automatically when executing `nixos-rebuild switch`
           home-manager.nixosModules.home-manager
@@ -51,12 +53,14 @@
             home-manager.useUserPackages = true;
             home-manager.sharedModules = [
               inputs.nvimdots.homeManagerModules.nvimdots
+              catppuccin.homeManagerModules.catppuccin
             ];
 
             home-manager.users.tony = {
               imports = [
                 ./home.nix
                 ./nvim/nvimdots.nix
+                # catppuccin.homeManagerModules.catppuccin
               ];
             };
             home-manager.backupFileExtension = "backup";

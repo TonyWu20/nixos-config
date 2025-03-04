@@ -1,4 +1,4 @@
-{ self, inputs, config, pkgs, ... }:
+{ self, inputs, config, pkgs, catppuccin, ... }:
 let
   inherit (inputs);
 in
@@ -19,7 +19,37 @@ in
   home.username = "tony";
   home.homeDirectory = "/home/tony";
 
+  catppuccin = {
+    bat = {
+      enable = true;
+      flavor = "macchiato";
+    };
 
+    fzf = {
+      enable = true;
+      flavor = "macchiato";
+    };
+    hyprland = {
+      enable = true;
+      flavor = "macchiato";
+    };
+    hyprlock = {
+      enable = true;
+      flavor = "macchiato";
+    };
+    # tmux = {
+    #   enable = true;
+    #   flavor = "macchiato";
+    # };
+    tofi = {
+      enable = true;
+      flavor = "macchiato";
+    };
+    skim = {
+      enable = true;
+      flavor = "macchiato";
+    };
+  };
 
   # link the configuration file in current directory to the specified location in home directory
   # home.file.".config/i3/wallpaper.jpg".source = ./wallpaper.jpg;
@@ -48,7 +78,7 @@ in
   home.packages = with pkgs; [
     # here is some command line tools I use frequently
     # feel free to add your own or remove some of them
-
+    bat
     fastfetch
     yazi # terminal file manager
     git-credential-manager
@@ -158,6 +188,11 @@ in
       identityFile = "~/.ssh/id_ed25519";
     };
   };
+
+  programs.bat =
+    {
+      enable = true;
+    };
 
   # starship - an customizable prompt for any shell
 
