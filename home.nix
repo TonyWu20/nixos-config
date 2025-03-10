@@ -129,6 +129,7 @@ in
 
     # productivity
     glow # markdown previewer in terminal
+    neomutt # email client in command line
 
     btop # replacement of htop/nmon
     iotop # io monitoring
@@ -185,6 +186,12 @@ in
       host = "mac";
       user = "tonywu";
       hostname = "10.147.17.25";
+      identityFile = "~/.ssh/id_ed25519";
+    };
+    matchBlocks.font = {
+      host = "font";
+      user = "fontainebleau";
+      hostname = "10.147.17.190";
       identityFile = "~/.ssh/id_ed25519";
     };
   };
