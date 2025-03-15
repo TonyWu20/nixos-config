@@ -9,6 +9,10 @@
     source = ./gpu.sh;
     executable = true;
   };
+  home.file.".config/waybar/traffic.sh" = {
+    source = ./traffic.sh;
+    executable = true;
+  };
   programs.waybar = {
     enable = true;
     settings = {
@@ -17,8 +21,8 @@
         layer = "top";
         position = "top";
         reload_style_on_change = true;
-        height = 40;
-        width = 2560;
+        # height = 40;
+        # width = 100;
         spacing = 1;
         modules-center = [ "hyprland/window" ];
         modules-right = [ "custom/weather" ];
@@ -35,8 +39,8 @@
         layer = "top";
         position = "bottom";
         reload_style_on_change = true;
-        height = 40;
-        width = 2560;
+        # height = 40;
+        # width = 2560;
         spacing = 1;
         modules-left = [
           "hyprland/workspaces"
@@ -53,6 +57,7 @@
           "custom/nv-gpu"
           "memory"
           "network"
+          "custom/netspeed"
           "pulseaudio"
           "clock"
         ];
@@ -62,11 +67,11 @@
           "warp-on-scroll" = false;
           "format" = "{icon}";
           "format-icons" = {
-            "1" = "";
-            "2" = "";
-            #         "3"= "";
-            #         "4"= "";
-            #         "5"= "";
+            # "1" = "";
+            # "2" = "";
+            # "3" = "";
+            # "4" = "";
+            # "5" = "";
             "urgent" = "";
             #         "focused"= "";
             #         "default"= ""; 
@@ -163,6 +168,11 @@
         "custom/kernel" = {
           "exec" = "uname -r | sed -E 's/^([0-9]+\\.[0-9]+\\.[0-9]+)-.*-([a-zA-Z0-9]+)/\\1-\\2/'";
           "format" = "{} ";
+        };
+        "custom/netspeed" = {
+          "interval" = 1;
+          "exec" = "${pkgs.bash}/bin/bash ~/.config/waybar/traffic.sh wlp0s20u2";
+          "format" = "{}";
         };
         "pulseaudio" = {
           "scroll-step" = 2;

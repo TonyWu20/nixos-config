@@ -1,7 +1,7 @@
 { config, ... }: {
   wayland.windowManager.hyprland.settings = {
     monitor = [
-      "HDMI-A-1, preferred, auto, auto,"
+      "HDMI-A-1, preferred, auto, 2,"
       "HDMI-A-2, 1920x1080@100, auto, auto"
     ];
     workspace = [

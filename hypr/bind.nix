@@ -15,6 +15,7 @@
       "$mainMod CTRL, KP_END, workspace,1"
       "$mainMod CTRL, KP_DOWN, workspace,2"
       "$mainMod CTRL, KP_NEXT, workspace,3"
+      "$mainMod CTRL, KP_LEFT, workspace,4"
       # Move active window to workspace
       "ALT SHIFT, KP_END, movetoworkspace, 1"
       "ALT SHIFT, KP_DOWN, movetoworkspace, 2"
