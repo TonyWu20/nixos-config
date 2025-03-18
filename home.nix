@@ -107,6 +107,8 @@ in
     source-han-sans-vf-ttf
     source-han-mono
 
+    castep
+
 
     # networking tools
     aria2 # A lightweight multi-protocol & multi-source command-line download utility
@@ -163,6 +165,7 @@ in
   # basic configuration of git, please change to your own
   programs.git = {
     enable = true;
+    lfs.enable = true;
     userName = "TonyWu20";
     userEmail = "tony.w21@gmail.com";
   };

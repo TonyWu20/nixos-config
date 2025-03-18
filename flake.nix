@@ -17,9 +17,10 @@
       # to avoid problems caused by different versions of nixpkgs.
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    castep.url = "git+file:///home/tony/Downloads/CASTEP-25.12-nixos";
   };
 
-  outputs = inputs@{ self, nixpkgs, home-manager, fenix, catppuccin, ... }: {
+  outputs = inputs@{ self, nixpkgs, home-manager, fenix, catppuccin, castep, ... }: {
     packages.x86_64-linux.default = fenix.packages.x86_64-linux.stable.toolchain;
     nixosConfigurations = {
       # Please replace my-nixos with your hostname
@@ -27,7 +28,7 @@
         system = "x86_64-linux";
         modules = [
           ({ pkgs, ... }: {
-            nixpkgs.overlays = [ fenix.overlays.default ];
+            nixpkgs.overlays = [ fenix.overlays.default castep.overlays.default ];
             environment.systemPackages = with pkgs; [
               (fenix.packages.x86_64-linux.stable.withComponents [
                 "cargo"
