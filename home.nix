@@ -82,6 +82,7 @@ in
     fastfetch
     yazi # terminal file manager
     git-credential-manager
+    git-lfs
     gh
 
     # archives
