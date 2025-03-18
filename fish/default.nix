@@ -19,5 +19,6 @@
     fishPlugins.z
     fishPlugins.fzf
     fishPlugins.done
+    fishPlugins.bass
   ];
 }

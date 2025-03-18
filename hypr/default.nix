@@ -17,10 +17,10 @@
     ];
     exec-once = [
       "$terminal"
-      "waybar"
       "fcitx5 -r -d"
       "dunst"
       "hyprpaper"
+      "waybar"
     ];
     input = {
       numlock_by_default = true;
