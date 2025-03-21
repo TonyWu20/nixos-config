@@ -140,6 +140,9 @@
   # List packages installed in system profile. To search, run:
   # $ nix search wget
   environment.systemPackages = with pkgs; [
+    udisks2
+    usbutils
+    udiskie
     linuxKernel.kernels.linux_6_12
     neovim # Do not forget to add an editor to edit configuration.nix! The Nano editor is also installed by default.
     wget
@@ -182,6 +185,8 @@
   };
   services.zerotierone.enable = true;
   services.zerotierone.joinNetworks = [ "b15644912e4d3047" ];
+  services.gvfs.enable = true;
+  services.udisks2.enable = true;
   # services.rustdesk-server = { enable = true; };
   services.greetd = {
     enable = true;

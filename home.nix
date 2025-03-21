@@ -18,6 +18,7 @@ in
   # TODO please change the username & home directory to your own
   home.username = "tony";
   home.homeDirectory = "/home/tony";
+  home.sessionVariables = { EDITOR = "nvim"; };
 
   catppuccin = {
     bat = {
@@ -50,6 +51,7 @@ in
       flavor = "macchiato";
     };
   };
+  services.udiskie.enable = true;
 
   # link the configuration file in current directory to the specified location in home directory
   # home.file.".config/i3/wallpaper.jpg".source = ./wallpaper.jpg;
@@ -98,6 +100,8 @@ in
     skim
     nushell
     nushellPlugins.skim
+    sad
+    delta
 
     # fonts
     nerd-fonts.hack
@@ -107,6 +111,7 @@ in
     source-han-sans-vf-ttf
     source-han-mono
 
+    # Self-packaged CASTEP v25.1.2
     castep
 
 
@@ -168,6 +173,9 @@ in
     lfs.enable = true;
     userName = "TonyWu20";
     userEmail = "tony.w21@gmail.com";
+    delta = {
+      enable = true;
+    };
   };
 
   programs.gh = {

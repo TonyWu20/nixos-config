@@ -11,6 +11,8 @@ let
 in
 {
   programs.neovim = {
+    enable = true;
+    defaultEditor = true;
     # enable = true;
     # extraPackages = with pkgs; [
     #   go
