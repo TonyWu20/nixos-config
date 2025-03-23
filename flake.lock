@@ -216,22 +216,6 @@
         "url": "https://github.com/NixOS/nixpkgs/archive/072a6db25e947df2f31aab9eccd0ab75d5b2da11.tar.gz"
       }
     },
-    "nixpkgs-stable": {
-      "locked": {
-        "lastModified": 1740743217,
-        "narHash": "sha256-brsCRzLqimpyhORma84c3W2xPbIidZlIc3JGIuQVSNI=",
-        "owner": "NixOS",
-        "repo": "nixpkgs",
-        "rev": "b27ba4eb322d9d2bf2dc9ada9fd59442f50c8d7c",
-        "type": "github"
-      },
-      "original": {
-        "owner": "NixOS",
-        "ref": "nixos-24.11",
-        "repo": "nixpkgs",
-        "type": "github"
-      }
-    },
     "nixpkgs_2": {
       "locked": {
         "lastModified": 1741513245,
@@ -326,11 +310,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1740991473,
-        "narHash": "sha256-QL+asaOp/VaBBfX/m1U/t6QnL3KxX1chnzQjsPpkE3Y=",
+        "lastModified": 1742730616,
+        "narHash": "sha256-GqovNkZPOuYnfQCkMvaK5HfQTj4MduICC2E0qb+ahu8=",
         "owner": "TonyWu20",
         "repo": "nvimdots",
-        "rev": "d0983101ebce3f3d25a91c40ff3089dc1e064f86",
+        "rev": "f7f71b3fb45572c1e968723d59e01f9abfaf3ef7",
         "type": "github"
       },
       "original": {
@@ -348,7 +332,6 @@
         "flake-parts": "flake-parts_2",
         "home-manager": "home-manager",
         "nixpkgs": "nixpkgs_4",
-        "nixpkgs-stable": "nixpkgs-stable",
         "nvimdots": "nvimdots"
       }
     },
