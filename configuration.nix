@@ -129,9 +129,8 @@
       tmuxPlugins.yank
       tmuxPlugins.sensible
       # tmux-mem-cpu-load
-      tmuxPlugins.catppuccin
     ];
-    extraConfig = "set -g @catppuccin-flavor macchiato";
+    # extraConfig = "set -g @catppuccin-flavor macchiato";
 
   };
 
