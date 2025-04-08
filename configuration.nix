@@ -162,8 +162,6 @@
     wl-clipboard-rs
     bat
     pkg-config
-    rustdesk
-    rustdesk-server
   ];
   environment.variables.EDITOR = "nvim";
 

@@ -35,8 +35,8 @@
                 "rust-src"
                 "rustc"
                 "rustfmt"
+                "rust-analyzer"
               ])
-              rust-analyzer-nightly
             ];
           })
           # Import the previous configuration.nix we used,
