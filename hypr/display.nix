@@ -1,7 +1,7 @@
 { config, ... }: {
   wayland.windowManager.hyprland.settings = {
     monitor = [
-      "HDMI-A-1, preferred, auto, 2,"
+      "HDMI-A-1, 3840x2160, auto, 2"
       "HDMI-A-2, 1920x1080@100, auto, auto"
     ];
     workspace = [
@@ -14,7 +14,7 @@
     };
     decoration = {
       "rounding" = "10";
-      "rounding_power" = 2;
+      # "rounding_power" = 2;
       "active_opacity" = 1.0;
       "inactive_opacity" = 1.0;
       shadow = {

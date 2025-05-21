@@ -18,6 +18,7 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     castep.url = "git+file:///home/tony/Downloads/CASTEP-25.12-nixos";
+    wezterm.url = "github:wezterm/wezterm?dir=nix";
   };
 
   outputs = inputs@{ self, nixpkgs, nixpkgs-stable, home-manager, fenix, catppuccin, castep, ... }: {
@@ -45,7 +46,8 @@
               fenix.overlays.default
               castep.overlays.default
               (self: super: {
-                wezterm = pkgs-stable.wezterm;
+                # wezterm = pkgs-stable.wezterm;
+                # hyprland = pkgs-stable.hyprland;
               })
             ];
             environment.systemPackages = with pkgs; [
@@ -73,7 +75,7 @@
             home-manager.useUserPackages = true;
             home-manager.sharedModules = [
               inputs.nvimdots.homeManagerModules.nvimdots
-              catppuccin.homeManagerModules.catppuccin
+              catppuccin.homeModules.catppuccin
             ];
 
             home-manager.users.tony = {
@@ -84,7 +86,7 @@
               ];
             };
             home-manager.backupFileExtension = "backup";
-            home-manager.extraSpecialArgs = inputs;
+            home-manager.extraSpecialArgs = { inherit inputs; };
 
           }
         ];

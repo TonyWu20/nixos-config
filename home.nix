@@ -11,6 +11,7 @@
     ./waybar
     ./fcitx5/home.nix
     ./tex
+    ./tofi
   ];
   # TODO please change the username & home directory to your own
   home.username = "tony";
@@ -100,6 +101,7 @@
     sad
     delta
 
+
     # fonts
     nerd-fonts.hack
     nerd-fonts.symbols-only
@@ -114,6 +116,7 @@
 
     # networking tools
     aria2 # A lightweight multi-protocol & multi-source command-line download utility
+    simple-http-server
 
     # misc
     file

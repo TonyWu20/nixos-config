@@ -1,6 +1,7 @@
 @import url("./colors.css");
 
 * {
+  background-color: transparent;
   border: none;
   border-radius: 1px;
   font-family:

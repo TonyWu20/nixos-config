@@ -1,10 +1,8 @@
-{ config, ... }: {
+{ pkgs, inputs, ... }:
+{
   programs.wezterm = {
     enable = true;
     extraConfig = builtins.readFile ./wezterm.lua;
-    colorSchemes = {
-      catppuccin-macchiato = (builtins.fromTOML (builtins.readFile ./catppuccin-macchiato.toml));
-    };
+    package = inputs.wezterm.packages.${pkgs.system}.default;
   };
-
 }

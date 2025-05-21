@@ -25,6 +25,9 @@
     input = {
       numlock_by_default = true;
     };
+    xwayland = {
+      force_zero_scaling = true;
+    };
   };
 
   programs.hyprlock = {
