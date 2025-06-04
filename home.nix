@@ -213,6 +213,12 @@
       hostname = "10.147.17.190";
       identityFile = "~/.ssh/id_ed25519";
     };
+    matchBlocks.klt = {
+      host = "klt"
+      user = "klt"
+      hostname = "10.147.17.146";
+      identityFile="~/.ssh/id_ed25519";
+    };
   };
 
   programs.bat =
