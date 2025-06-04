@@ -20,6 +20,7 @@
       "ALT SHIFT, KP_END, movetoworkspace, 1"
       "ALT SHIFT, KP_DOWN, movetoworkspace, 2"
       "ALT SHIFT, KP_NEXT, movetoworkspace, 3"
+      "ALT SHIFT, KP_LEFT, movetoworkspace, 4"
       # Cycle through workspace
       "$mainMod, J, workspace, e+1"
       "$mainMod, K, workspace, e-1"

@@ -59,6 +59,7 @@
                 "rustfmt"
                 "rust-analyzer"
               ])
+              gcc
             ];
           })
           # Import the previous configuration.nix we used,
