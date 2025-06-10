@@ -6,7 +6,7 @@
     flake-parts.url = "github:hercules-ci/flake-parts";
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     nixpkgs-stable.url = "github:NixOS/nixpkgs/nixos-24.11";
-    nvimdots = { url = "github:TonyWu20/nvimdots/nix"; inputs.nixpkgs.follows = "nixpkgs"; };
+    nvimdots = { url = "github:TonyWu20/nvimdots/nix"; };
     catppuccin.url = "github:catppuccin/nix";
     fenix = { url = "github:nix-community/fenix"; inputs.nixpkgs.follows = "nixpkgs"; };
     home-manager = {
@@ -21,7 +21,7 @@
     wezterm.url = "github:wezterm/wezterm?dir=nix";
   };
 
-  outputs = inputs@{ self, nixpkgs, nixpkgs-stable, home-manager, fenix, catppuccin, castep, ... }: {
+  outputs = inputs@{ self, nvimdots, nixpkgs, nixpkgs-stable, home-manager, fenix, catppuccin, castep, ... }: {
     packages.x86_64-linux.default = fenix.packages.x86_64-linux.stable.toolchain;
     nixosConfigurations = {
       # Please replace my-nixos with your hostname
@@ -72,22 +72,23 @@
           # so that home-manager configuration will be deployed automatically when executing `nixos-rebuild switch`
           home-manager.nixosModules.home-manager
           {
-            home-manager.useGlobalPkgs = true;
-            home-manager.useUserPackages = true;
-            home-manager.sharedModules = [
-              inputs.nvimdots.homeManagerModules.nvimdots
-              catppuccin.homeModules.catppuccin
-            ];
-
-            home-manager.users.tony = {
-              imports = [
-                ./home.nix
-                ./nvim/nvimdots.nix
-                # catppuccin.homeManagerModules.catppuccin
+            home-manager = {
+              useGlobalPkgs = true;
+              useUserPackages = true;
+              sharedModules = [
+                nvimdots.homeManagerModules.default
+                catppuccin.homeModules.catppuccin
               ];
+              users.tony = {
+                imports = [
+                  ./home.nix
+                  ./nvim/nvimdots.nix
+                  # catppuccin.homeManagerModules.catppuccin
+                ];
+              };
+              backupFileExtension = "backup";
+              extraSpecialArgs = { inherit inputs; };
             };
-            home-manager.backupFileExtension = "backup";
-            home-manager.extraSpecialArgs = { inherit inputs; };
 
           }
         ];
