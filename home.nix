@@ -12,11 +12,17 @@
     ./fcitx5/home.nix
     ./tex
     ./tofi
+    ./neomutt
   ];
   # TODO please change the username & home directory to your own
   home.username = "tony";
   home.homeDirectory = "/home/tony";
-  home.sessionVariables = { EDITOR = "nvim"; };
+  home.sessionVariables = {
+    EDITOR = "nvim";
+    LD_LIBRARY_PATH = with pkgs; lib.makeLibraryPath [
+      fontconfig
+    ];
+  };
 
   catppuccin = {
     bat = {
@@ -103,12 +109,15 @@
 
 
     # fonts
+    fontconfig
     nerd-fonts.hack
     nerd-fonts.symbols-only
     noto-fonts-cjk-serif
     noto-fonts-cjk-sans
     source-han-sans-vf-ttf
     source-han-mono
+    noto-fonts
+    source-sans
 
     # Self-packaged CASTEP v25.1.2
     castep
@@ -138,6 +147,7 @@
     # productivity
     glow # markdown previewer in terminal
     neomutt # email client in command line
+    pandoc
 
     btop # replacement of htop/nmon
     iotop # io monitoring
@@ -214,10 +224,10 @@
       identityFile = "~/.ssh/id_ed25519";
     };
     matchBlocks.klt = {
-      host = "klt"
-      user = "klt"
+      host = "klt";
+      user = "klt";
       hostname = "10.147.17.146";
-      identityFile="~/.ssh/id_ed25519";
+      identityFile = "~/.ssh/id_ed25519";
     };
   };
 

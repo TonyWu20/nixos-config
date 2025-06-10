@@ -31,7 +31,7 @@ end)
 return {
 	-- font = wezterm.font("JetBrainsMono Nerd Font Mono"),
 	font = wezterm.font_with_fallback({ "Hack Nerd Font", "Symbols Nerd Font", "Noto Sans CJK SC", "Noto Sans CJK HK" }),
-	front_end = "OpenGL",
+	front_end = "WebGpu",
 	enable_wayland = false,
 	dpi = 192,
 	window_background_opacity = 0.8,

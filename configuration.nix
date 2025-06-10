@@ -134,7 +134,11 @@
 
   };
 
-
+  environment.variables = {
+    LD_LIBRARY_PATH = with pkgs; lib.makeLibraryPath [
+      fontconfig
+    ];
+  };
 
   # List packages installed in system profile. To search, run:
   # $ nix search wget
@@ -162,6 +166,7 @@
     wl-clipboard-rs
     bat
     pkg-config
+    fontconfig
   ];
   environment.variables.EDITOR = "nvim";
 
@@ -239,7 +244,7 @@
   nix.gc = {
     automatic = true;
     dates = "weekly";
-    options = "--delete-older-than 1w";
+    options = "--delete-older-than 14";
   };
 
   # Optimize storage
