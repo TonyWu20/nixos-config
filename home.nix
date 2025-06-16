@@ -54,6 +54,10 @@
       enable = true;
       flavor = "macchiato";
     };
+    fish = {
+      enable = true;
+      flavor = "macchiato";
+    };
   };
   services.udiskie.enable = true;
 
@@ -227,6 +231,12 @@
       host = "klt";
       user = "klt";
       hostname = "10.147.17.146";
+      identityFile = "~/.ssh/id_ed25519";
+    };
+    matchBlocks.j = {
+      host = "j";
+      user = "j";
+      hostname = "10.0.0.3";
       identityFile = "~/.ssh/id_ed25519";
     };
   };
