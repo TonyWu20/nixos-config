@@ -16,6 +16,24 @@
     shellAbbrs = {
       vim = "nvim";
     };
+    functions = {
+      num_kpt_geom = {
+        argumentNames = [ "cell" ];
+        body = "sed 's/\r$//g' $cell | rg -UP \"(?s)(?<=%BLOCK KPOINTS_LIST\n).*(?=%ENDBLOCK KPOINTS_LIST)\"  |wc -l";
+        description =
+          "Count the lines inside block KPOINTS_LIST to get the number of kpoints in non-spectral task cell.
+# Args:
+- cell: path to the cell that contains block KPOINTS_LIST.";
+      };
+      num_kpt_spec = {
+        argumentNames = [ "cell" ];
+        body = "sed 's/\r$//g' $cell | rg -UP \"(?s)(?<=%BLOCK SPECTRAL_KPOINT_LIST\n).*(?=%ENDBLOCK SPECTRAL_KPOINT_LIST)\"  |wc -l";
+        description =
+          "Count the lines inside block SPECTRAL_KPOINT_LIST to get the number of kpoints in spectral task cell.
+# Args:
+- cell: path to the cell that contains block SPECTRAL_KPOINT_LIST.";
+      };
+    };
   };
   home.packages = with pkgs; [
     fishPlugins.z
@@ -25,3 +43,4 @@
     fishPlugins.forgit
   ];
 }
+
