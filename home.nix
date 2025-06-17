@@ -124,7 +124,7 @@
     source-sans
 
     # Self-packaged CASTEP v25.1.2
-    castep
+    castep_25_12
 
 
     # networking tools
