@@ -11,6 +11,7 @@
     set -gx FZF_CTRL_T_OPTS '--walker-skip .git,node_modules,target --preview \"bat -n --color=always {}\" --bind \"ctrl-/:change-preview-window(down|hidden|)\"'
     set -U FZF_TMUX 0
     set -U FZF_COMPLETE 1
+    set -ga PATH ~/.cargo/bin/
     ";
     shellAbbrs = {
       vim = "nvim";

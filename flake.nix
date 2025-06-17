@@ -17,7 +17,7 @@
       # to avoid problems caused by different versions of nixpkgs.
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    castep.url = "git+file:///home/tony/Downloads/CASTEP-25.12-nixos";
+    castep.url = "git+ssh://git@github.com/TonyWu20/CASTEP-25.12-nixos";
     wezterm.url = "github:wezterm/wezterm?dir=nix";
   };
 
