@@ -19,10 +19,12 @@
     };
     castep.url = "git+ssh://git@github.com/TonyWu20/CASTEP-25.12-nixos";
     wezterm.url = "github:wezterm/wezterm?dir=nix";
+    castep_devShells = { url = "github:TonyWu20/castep_devshell"; inputs.nixpkgs.follows = "nixpkgs"; };
   };
 
-  outputs = inputs@{ self, nvimdots, nixpkgs, nixpkgs-stable, home-manager, fenix, catppuccin, castep, ... }: {
+  outputs = inputs@{ self, nvimdots, nixpkgs, nixpkgs-stable, home-manager, fenix, catppuccin, castep, castep_devShells, ... }: {
     packages.x86_64-linux.default = fenix.packages.x86_64-linux.stable.toolchain;
+    devShells = castep_devShells.devShells;
     nixosConfigurations = {
       # Please replace my-nixos with your hostname
       nixos = nixpkgs.lib.nixosSystem rec {
@@ -50,6 +52,9 @@
                 # hyprland = pkgs-stable.hyprland;
               })
             ];
+            nix.registry = {
+              myShell.flake = self;
+            };
             environment.systemPackages = with pkgs; [
               (fenix.packages.x86_64-linux.stable.withComponents [
                 "cargo"
