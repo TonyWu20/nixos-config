@@ -20,9 +20,13 @@
     castep.url = "git+ssh://git@github.com/TonyWu20/CASTEP-25.12-nixos";
     wezterm.url = "github:wezterm/wezterm?dir=nix";
     castep_devShells = { url = "github:TonyWu20/castep_devshell"; inputs.nixpkgs.follows = "nixpkgs"; };
+    sops-nix = {
+      url = "github:Mic92/sops-nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
-  outputs = inputs@{ self, nvimdots, nixpkgs, nixpkgs-stable, home-manager, fenix, catppuccin, castep, castep_devShells, ... }: {
+  outputs = inputs@{ self, nvimdots, nixpkgs, nixpkgs-stable, home-manager, fenix, catppuccin, castep, castep_devShells, sops-nix, ... }: {
     packages.x86_64-linux.default = fenix.packages.x86_64-linux.stable.toolchain;
     devShells = castep_devShells.devShells;
     nixosConfigurations = {
@@ -67,6 +71,7 @@
               gcc
             ];
           })
+          sops-nix.nixosModules.sops
           # Import the previous configuration.nix we used,
           # so the old configuration file still takes effect
           ./configuration.nix

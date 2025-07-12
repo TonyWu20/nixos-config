@@ -12,6 +12,7 @@
     set -U FZF_TMUX 0
     set -U FZF_COMPLETE 1
     set -ga PATH ~/.cargo/bin/
+    bass source /etc/set-environment
     ";
     shellAbbrs = {
       vim = "nvim";
@@ -32,6 +33,14 @@
           "Count the lines inside block SPECTRAL_KPOINT_LIST to get the number of kpoints in spectral task cell.
 # Args:
 - cell: path to the cell that contains block SPECTRAL_KPOINT_LIST.";
+      };
+      osccp = {
+        description = "Copy through OSC52 ANSI escape sequence";
+        body = "
+          read -z input_data 
+          set b64 (echo $input_data|base64 |tr -d '\\n')
+          printf '\\033]52;c;%s\\007' $b64
+        ";
       };
     };
   };

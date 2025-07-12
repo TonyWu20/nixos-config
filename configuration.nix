@@ -12,6 +12,8 @@
     [
       # Include the results of the hardware scan.
       ./hardware-configuration.nix
+      ./sops
+      ./slurm
     ];
 
   # Use the systemd-boot EFI boot loader.
@@ -106,14 +108,6 @@
     ];
     shell = pkgs.fish;
   };
-  # home-manager.users.tony = { pkgs, ...}: {
-  # home.packages = with pkgs; [
-  #   	tree
-  # nushell
-  # nushellPlugins.skim
-  # ];
-  # home.stateVersion="24.11";
-  #  };
 
   programs.firefox.enable = true;
   programs.hyprland.enable = true;
@@ -167,8 +161,13 @@
     bat
     pkg-config
     fontconfig
+    slurm
+    munge
+    sops
+    age
   ];
   environment.variables.EDITOR = "nvim";
+  environment.sessionVariables.SOPS_AGE_KEY_FILE = "/home/tony/nixos-config/sops/age/keys.txt";
 
   # Some programs need SUID wrappers, can be configured further or are
   # started in user sessions.
@@ -185,6 +184,14 @@
   services.openssh = {
     enable = true;
   };
+  services.munge = {
+    enable = true;
+    password = config.sops.secrets."munge/munge.key".path;
+  };
+  systemd.services.munged = {
+    serviceConfig.SupplementaryGroups = [ config.users.groups.keys.name ];
+  };
+
   services.zerotierone.enable = true;
   services.zerotierone.joinNetworks = [ "b15644912e4d3047" ];
   services.gvfs.enable = true;
@@ -211,7 +218,14 @@
     };
   };
   # Open ports in the firewall.
-  networking.firewall.allowedTCPPorts = [ 22 3000 8000 10000 ];
+  networking.firewall.allowedTCPPorts = [ 22 3000 8000 8080 10000 ];
+  networking.interfaces.enp6s0.ipv4.addresses = [{
+    address = "10.0.0.2";
+    prefixLength = 24;
+  }];
+  networking.extraHosts = ''
+    "10.0.0.3 j-ubuntu"
+  '';
   # networking.firewall.allowedUDPPorts = [ ... ];
   # Or disable the firewall altogether.
   # networking.firewall.enable = false;

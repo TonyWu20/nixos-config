@@ -13,6 +13,7 @@
     ./tex
     ./tofi
     ./neomutt
+    ./nushell
   ];
   # TODO please change the username & home directory to your own
   home.username = "tony";
@@ -22,6 +23,7 @@
     LD_LIBRARY_PATH = with pkgs; lib.makeLibraryPath [
       fontconfig
     ];
+    # SLURM_CONF = builtins.getEnv "SLURM_CONF";
   };
 
   catppuccin = {
@@ -107,10 +109,12 @@
     zoxide
     skim
     nushell
-    nushellPlugins.skim
     sad
     delta
 
+    pkg-config
+
+    python3
 
     # fonts
     fontconfig
@@ -192,6 +196,7 @@
       enable = true;
     };
   };
+
 
   programs.gh = {
     enable = true;
