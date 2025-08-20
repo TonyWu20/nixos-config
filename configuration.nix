@@ -128,11 +128,11 @@
 
   };
 
-  environment.variables = {
-    LD_LIBRARY_PATH = with pkgs; lib.makeLibraryPath [
-      fontconfig
-    ];
-  };
+  # environment.variables = {
+  #   LD_LIBRARY_PATH = with pkgs; lib.makeLibraryPath [
+  #     fontconfig
+  #   ];
+  # };
 
   # List packages installed in system profile. To search, run:
   # $ nix search wget
@@ -152,7 +152,7 @@
     ripgrep
     fd
     skim
-    greetd.greetd
+    greetd
     zerotierone
     wezterm
     hyprland
@@ -201,7 +201,7 @@
     enable = true;
     settings = {
       default_session = {
-        command = "${pkgs.greetd.tuigreet}/bin/tuigreet --time --cmd Hyprland";
+        command = "${pkgs.tuigreet}/bin/tuigreet --time --cmd Hyprland";
         user = "greeter";
       };
     };
@@ -218,14 +218,51 @@
     };
   };
   # Open ports in the firewall.
-  networking.firewall.allowedTCPPorts = [ 22 3000 8000 8080 10000 ];
   networking.interfaces.enp6s0.ipv4.addresses = [{
     address = "10.0.0.2";
     prefixLength = 24;
   }];
   networking.extraHosts = ''
-    "10.0.0.3 j-ubuntu"
+    10.0.0.2 nixos
+    10.0.0.3 j-ubuntu
   '';
+  fileSystems = {
+    "/export/castep_jobs" = {
+      device = "/home/tony/Downloads/castep_jobs";
+      options = [ "bind" ];
+      fsType = "nfs";
+    };
+    "/export/CASTEP-6.11-nixos" = {
+      device = "/home/tony/Downloads/CASTEP-6.11-nixos";
+      options = [ "bind" ];
+    };
+    "/export/castep_devshell" = {
+      device = "/home/tony/Downloads/castep_devshell";
+      options = [ "bind" ];
+    };
+  };
+  boot.supportedFilesystems = [ "nfs" ];
+  services.rpcbind.enable = true; # needed for NFS
+  services.nfs.server = {
+    enable = true;
+    exports = ''
+      /export       10.0.0.2(rw,fsid=0,no_subtree_check) 10.0.0.3(rw,fsid=0,no_subtree_check)
+      /export/castep_jobs  10.0.0.2(rw,nohide,insecure,no_subtree_check) 10.0.0.3(rw,nohide,insecure,no_subtree_check)
+      /export/CASTEP-6.11-nixos 10.0.0.2(rw,nohide,insecure,no_subtree_check) 10.0.0.3(rw,nohide,insecure,no_subtree_check)
+      /export/castep_devshell 10.0.0.2(rw,nohide,insecure,no_subtree_check) 10.0.0.3(rw,nohide,insecure,no_subtree_check)
+    '';
+    # fixed rpc.statd port; for firewall
+    lockdPort = 4001;
+    mountdPort = 4002;
+    statdPort = 4000;
+    extraNfsdConfig = '''';
+  };
+  networking.firewall = {
+    enable = true;
+    # for NFSv3; view with `rpcinfo -p`
+    allowedTCPPorts = [ 111 2049 4000 4001 4002 20048 22 3000 8000 8080 10000 ];
+    allowedUDPPorts = [ 111 2049 4000 4001 4002 20048 ];
+  };
   # networking.firewall.allowedUDPPorts = [ ... ];
   # Or disable the firewall altogether.
   # networking.firewall.enable = false;
