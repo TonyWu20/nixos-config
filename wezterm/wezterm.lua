@@ -35,7 +35,7 @@ return {
 	enable_wayland = false,
 	dpi = 192,
 	window_background_opacity = 0.8,
-	font_size = 24,
+	font_size = 12,
 	line_height = 1.0,
 	-- color_scheme = "Gruvbox Dark",
 	color_scheme = "Catppuccin Macchiato",
