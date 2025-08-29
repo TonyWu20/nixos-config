@@ -13,16 +13,12 @@
     ./tex
     ./tofi
     ./neomutt
-    ./nushell
   ];
   # TODO please change the username & home directory to your own
   home.username = "tony";
   home.homeDirectory = "/home/tony";
   home.sessionVariables = {
     EDITOR = "nvim";
-    LD_LIBRARY_PATH = with pkgs; lib.makeLibraryPath [
-      fontconfig
-    ];
     # SLURM_CONF = builtins.getEnv "SLURM_CONF";
   };
 
@@ -128,7 +124,7 @@
     source-sans
 
     # Self-packaged CASTEP v25.1.2
-    castep_25_12
+    #castep_25_12
 
 
     # networking tools
@@ -157,7 +153,7 @@
     neomutt # email client in command line
     pandoc
 
-    btop # replacement of htop/nmon
+    btop-cuda # replacement of htop/nmon
     iotop # io monitoring
     iftop # network monitoring
 
@@ -226,10 +222,10 @@
       hostname = "10.0.0.1";
       identityFile = "~/.ssh/id_ed25519";
     };
-    matchBlocks.font = {
-      host = "font";
-      user = "fontainebleau";
-      hostname = "10.147.17.190";
+    matchBlocks.cezanne = {
+      host = "cezanne";
+      user = "handsomechen";
+      hostname = "10.147.17.40";
       identityFile = "~/.ssh/id_ed25519";
     };
     matchBlocks.klt = {
@@ -242,6 +238,18 @@
       host = "j";
       user = "j";
       hostname = "10.0.0.3";
+      identityFile = "~/.ssh/id_ed25519";
+    };
+    matchBlocks.mba = {
+      host = "mba";
+      user = "tony";
+      hostname = "10.147.17.179";
+      identityFile = "~/.ssh/id_ed25519";
+    };
+    matchBlocks.archDual = {
+      host = "archJerry";
+      user = "arch";
+      hostname = "10.147.17.207";
       identityFile = "~/.ssh/id_ed25519";
     };
   };
@@ -268,6 +276,9 @@
     #   urlencode = "python3 -c 'import sys, urllib.parse as ul; print(ul.quote_plus(sys.stdin.read()))'";
     # };
   };
+  programs.direnv.enable = true;
+  programs.direnv.enableNushellIntegration = true;
+  programs.direnv.nix-direnv.enable = true;
 
   # This value determines the home Manager release that your
   # configuration is compatible with. This helps avoid breakage

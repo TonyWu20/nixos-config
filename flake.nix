@@ -24,9 +24,23 @@
       url = "github:Mic92/sops-nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    nushell-cfg.url = "github:TonyWu20/nushell_hm_module";
   };
 
-  outputs = inputs@{ self, nvimdots, nixpkgs, nixpkgs-stable, home-manager, fenix, catppuccin, castep, castep_devShells, sops-nix, ... }:
+  outputs =
+    inputs@{ self
+    , nvimdots
+    , nixpkgs
+    , nixpkgs-stable
+    , home-manager
+    , fenix
+    , catppuccin
+    , castep
+    , castep_devShells
+    , sops-nix
+    , nushell-cfg
+    , ...
+    }:
     let
       system = "x86_64-linux";
       pkgs = import nixpkgs {
@@ -115,11 +129,11 @@
                 sharedModules = [
                   nvimdots.homeManagerModules.default
                   catppuccin.homeModules.catppuccin
+                  nushell-cfg.homeManagerModules.default
                 ];
                 users.tony = {
                   imports = [
                     ./home.nix
-                    # catppuccin.homeManagerModules.catppuccin
                   ];
                 };
                 backupFileExtension = "backup";
