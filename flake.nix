@@ -17,9 +17,7 @@
       # to avoid problems caused by different versions of nixpkgs.
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    castep.url = "git+ssh://git@github.com/TonyWu20/CASTEP-25.12-nixos";
     wezterm.url = "github:wezterm/wezterm?dir=nix";
-    castep_devShells = { url = "github:TonyWu20/castep_devshell"; inputs.nixpkgs.follows = "nixpkgs"; };
     sops-nix = {
       url = "github:Mic92/sops-nix";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -35,8 +33,6 @@
     , home-manager
     , fenix
     , catppuccin
-    , castep
-    , castep_devShells
     , sops-nix
     , nushell-cfg
     , ...
@@ -90,7 +86,6 @@
 
               nixpkgs.overlays = [
                 fenix.overlays.default
-                castep.overlays.default
                 (self: super: {
                   # wezterm = pkgs-stable.wezterm;
                   # hyprland = pkgs-stable.hyprland;
@@ -98,7 +93,6 @@
               ];
               nix.registry = {
                 myShell.flake = self;
-                castep.flake = castep_devShells;
               };
               environment.systemPackages = with pkgs; [
                 (fenix.packages.x86_64-linux.stable.withComponents [
