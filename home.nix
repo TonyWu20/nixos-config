@@ -57,7 +57,14 @@
       flavor = "macchiato";
     };
   };
-  services.udiskie.enable = true;
+  services.udiskie = {
+    enable = true;
+    settings = {
+      program_options = {
+        file_manager = "${pkgs.wezterm}/bin/wezterm -e ${pkgs.yazi}/bin/yazi";
+      };
+    };
+  };
 
   # link the configuration file in current directory to the specified location in home directory
   # home.file.".config/i3/wallpaper.jpg".source = ./wallpaper.jpg;
@@ -202,8 +209,8 @@
 
   programs.ssh = {
     enable = true;
-    forwardAgent = true;
-    addKeysToAgent = "yes";
+    # forwardAgent = true;
+    # addKeysToAgent = "yes";
     matchBlocks.gh = {
       host = "github.com";
       user = "git";
@@ -225,7 +232,7 @@
     matchBlocks.cezanne = {
       host = "cezanne";
       user = "handsomechen";
-      hostname = "10.147.17.40";
+      hostname = "10.147.17.168";
       identityFile = "~/.ssh/id_ed25519";
     };
     matchBlocks.klt = {
@@ -258,6 +265,10 @@
     {
       enable = true;
     };
+  programs.fzf = {
+    enable = true;
+    enableFishIntegration = true;
+  };
 
   # starship - an customizable prompt for any shell
 

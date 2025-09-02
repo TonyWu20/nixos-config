@@ -14,6 +14,7 @@
       ./hardware-configuration.nix
       ./sops
       ./slurm
+      ./munge
     ];
 
   # Use the systemd-boot EFI boot loader.
@@ -162,7 +163,6 @@
     pkg-config
     fontconfig
     slurm
-    munge
     sops
     age
   ];
@@ -184,17 +184,11 @@
   services.openssh = {
     enable = true;
   };
-  services.munge = {
-    enable = true;
-    password = config.sops.secrets."munge/munge.key".path;
-  };
-  systemd.services.munged = {
-    serviceConfig.SupplementaryGroups = [ config.users.groups.keys.name ];
-  };
 
   services.zerotierone.enable = true;
   services.zerotierone.joinNetworks = [ "b15644912e4d3047" ];
   services.gvfs.enable = true;
+  services.devmon.enable = true;
   services.udisks2.enable = true;
   # services.rustdesk-server = { enable = true; };
   services.greetd = {
