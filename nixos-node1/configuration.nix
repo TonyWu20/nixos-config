@@ -31,5 +31,6 @@
     };
   };
   networking.hostName = "nixos-2"; # Define your hostname.
+  networking.domain = "nixCluster"; # Define your domain.
 }
 

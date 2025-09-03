@@ -14,5 +14,6 @@
       ./cache.nix
     ];
   networking.hostName = "nixos"; # Define your hostname.
+  networking.domain = "nixCluster"; # Define your domain.
 }
 

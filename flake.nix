@@ -128,7 +128,7 @@
             }
           ];
         };
-        nixos-2 = nixpkgs.lib.nixosSystem {
+        "nixos-2" = nixpkgs.lib.nixosSystem {
           system = "x86_64-linux";
           # The `specialArgs` parameter passes the
           # non-default nixpkgs instances to other nix modules
