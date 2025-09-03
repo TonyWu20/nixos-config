@@ -5,10 +5,10 @@
     address = "10.0.0.3";
     prefixLength = 24;
   }];
-  networking.extraHosts = ''
-    10.0.0.3 nixos-2
-    10.0.0.2 nixos
-  '';
+  networking.hosts = {
+    "10.0.0.3" = [ "nixos-2" ];
+    "10.0.0.2" = [ "nixos" ];
+  };
   fileSystems = {
     "/export/castep_jobs" = {
       device = "10.0.0.2:/castep_jobs";
