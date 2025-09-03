@@ -2,7 +2,7 @@
 # your system. Help is available in the configuration.nix(5) man page, on
 # https://search.nixos.org/options and in the NixOS manual (`nixos-help`).
 
-{ pkgs, ... }:
+{ pkgs, lib, ... }:
 {
   imports =
     [
@@ -19,6 +19,16 @@
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAbR3ws1aSpPFp9wblhtHpJk3F5qyD/lqwjiXTc0zLku root@JerryDK"
     ];
     shell = pkgs.fish;
+  };
+  nix = {
+    settings = {
+      substituters = lib.mkForce [
+        "http://10.0.0.2"
+      ];
+      trusted-public-keys = [
+        "10.0.0.2:iIE9Q90BgaU/izk7x2F7+j/C5B2guzO0JULT2q2yylI="
+      ];
+    };
   };
 }
 
