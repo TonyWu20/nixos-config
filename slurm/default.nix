@@ -5,7 +5,6 @@ in
 {
   services.slurm = {
     client.enable = true;
-    server.enable = true;
     enableStools = false;
     controlMachine = host;
     dbdserver = {

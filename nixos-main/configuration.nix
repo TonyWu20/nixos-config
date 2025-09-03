@@ -10,6 +10,7 @@
       ../configuration-common.nix
       ./hardware-configuration.nix
       ./network_nfs.nix
+      ./slurm.nix
       ./cache.nix
     ];
 }
