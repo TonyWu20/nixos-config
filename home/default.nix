@@ -1,22 +1,20 @@
 { pkgs, ... }:
 {
   imports = [
-    ./starship.nix
-    ./nvim
-    ./hypr
-    ./wezterm
-    ./tmux
-    ./fish
-    ./rime
-    ./waybar
-    ./fcitx5/home.nix
-    ./tex
-    ./tofi
-    ./neomutt
+    ../starship.nix
+    ../nvim
+    ../hypr
+    ../wezterm
+    ../tmux
+    ../fish
+    ../rime
+    ../waybar
+    ../fcitx5/home.nix
+    ../tex
+    ../tofi
+    ../neomutt
   ];
   # TODO please change the username & home directory to your own
-  home.username = "tony";
-  home.homeDirectory = "/home/tony";
   home.sessionVariables = {
     EDITOR = "nvim";
     # SLURM_CONF = builtins.getEnv "SLURM_CONF";
@@ -40,10 +38,6 @@
       enable = true;
       flavor = "macchiato";
     };
-    # tmux = {
-    #   enable = true;
-    #   flavor = "macchiato";
-    # };
     tofi = {
       enable = true;
       flavor = "macchiato";
@@ -189,16 +183,6 @@
     alacritty
   ];
 
-  # basic configuration of git, please change to your own
-  programs.git = {
-    enable = true;
-    lfs.enable = true;
-    userName = "TonyWu20";
-    userEmail = "tony.w21@gmail.com";
-    delta = {
-      enable = true;
-    };
-  };
 
 
   programs.gh = {
@@ -211,54 +195,6 @@
     enable = true;
     # forwardAgent = true;
     # addKeysToAgent = "yes";
-    matchBlocks.gh = {
-      host = "github.com";
-      user = "git";
-      hostname = "github.com";
-      identityFile = "~/.ssh/id_ed25519";
-    };
-    matchBlocks.mac = {
-      host = "mac";
-      user = "tonywu";
-      hostname = "10.147.17.25";
-      identityFile = "~/.ssh/id_ed25519";
-    };
-    matchBlocks.local-mac = {
-      host = "local-mac";
-      user = "tonywu";
-      hostname = "10.0.0.1";
-      identityFile = "~/.ssh/id_ed25519";
-    };
-    matchBlocks.cezanne = {
-      host = "cezanne";
-      user = "handsomechen";
-      hostname = "10.147.17.168";
-      identityFile = "~/.ssh/id_ed25519";
-    };
-    matchBlocks.klt = {
-      host = "klt";
-      user = "klt";
-      hostname = "10.147.17.146";
-      identityFile = "~/.ssh/id_ed25519";
-    };
-    matchBlocks.j = {
-      host = "j";
-      user = "j";
-      hostname = "10.0.0.3";
-      identityFile = "~/.ssh/id_ed25519";
-    };
-    matchBlocks.mba = {
-      host = "mba";
-      user = "tony";
-      hostname = "10.147.17.179";
-      identityFile = "~/.ssh/id_ed25519";
-    };
-    matchBlocks.archDual = {
-      host = "archJerry";
-      user = "arch";
-      hostname = "10.147.17.207";
-      identityFile = "~/.ssh/id_ed25519";
-    };
   };
 
   programs.bat =

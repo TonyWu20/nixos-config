@@ -11,7 +11,6 @@
   imports =
     [
       # Include the results of the hardware scan.
-      ./hardware-configuration.nix
       ./sops
       ./slurm
       ./munge
@@ -125,19 +124,14 @@
       tmuxPlugins.sensible
       # tmux-mem-cpu-load
     ];
-    # extraConfig = "set -g @catppuccin-flavor macchiato";
 
   };
 
-  # environment.variables = {
-  #   LD_LIBRARY_PATH = with pkgs; lib.makeLibraryPath [
-  #     fontconfig
-  #   ];
-  # };
 
   # List packages installed in system profile. To search, run:
   # $ nix search wget
   environment.systemPackages = with pkgs; [
+    gcc
     udisks2
     usbutils
     udiskie
@@ -152,16 +146,12 @@
     fishPlugins.forgit
     ripgrep
     fd
-    skim
     greetd
     zerotierone
     wezterm
     hyprland
     tmux
     wl-clipboard-rs
-    bat
-    pkg-config
-    fontconfig
     slurm
     sops
     age
@@ -184,9 +174,7 @@
   services.openssh = {
     enable = true;
   };
-
   services.zerotierone.enable = true;
-  services.zerotierone.joinNetworks = [ "b15644912e4d3047" ];
   services.gvfs.enable = true;
   services.devmon.enable = true;
   services.udisks2.enable = true;
@@ -211,53 +199,8 @@
         	    '');
     };
   };
-  # Open ports in the firewall.
-  networking.interfaces.enp6s0.ipv4.addresses = [{
-    address = "10.0.0.2";
-    prefixLength = 24;
-  }];
-  networking.extraHosts = ''
-    10.0.0.2 nixos
-    10.0.0.3 j-ubuntu
-  '';
-  fileSystems = {
-    "/export/castep_jobs" = {
-      device = "/home/tony/Downloads/castep_jobs";
-      options = [ "bind" ];
-      fsType = "nfs";
-    };
-    "/export/CASTEP-6.11-nixos" = {
-      device = "/home/tony/Downloads/CASTEP-6.11-nixos";
-      options = [ "bind" ];
-      fsType = "nfs";
-    };
-    "/export/CASTEP-25.12-nixos" = {
-      device = "/home/tony/Downloads/CASTEP-25.12-nixos";
-      options = [ "bind" ];
-      fsType = "nfs";
-    };
-    "/export/castep_devshell" = {
-      device = "/home/tony/Downloads/castep_devshell";
-      options = [ "bind" ];
-      fsType = "nfs";
-    };
-  };
   boot.supportedFilesystems = [ "nfs" ];
   services.rpcbind.enable = true; # needed for NFS
-  services.nfs.server = {
-    enable = true;
-    exports = ''
-      /export       10.0.0.2(rw,fsid=0,no_subtree_check) 10.0.0.3(rw,fsid=0,no_subtree_check)
-      /export/castep_jobs     *(rw,nohide,insecure,no_subtree_check)
-      /export/CASTEP-25.12-nixos     *(rw,nohide,insecure,no_subtree_check)
-      /export/castep_devshell     *(rw,nohide,insecure,no_subtree_check)
-    '';
-    # fixed rpc.statd port; for firewall
-    lockdPort = 4001;
-    mountdPort = 4002;
-    statdPort = 4000;
-    extraNfsdConfig = '''';
-  };
   networking.firewall = {
     enable = true;
     # for NFSv3; view with `rpcinfo -p`

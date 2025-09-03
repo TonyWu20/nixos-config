@@ -45,6 +45,25 @@
         cudaSupport = true;
       };
       };
+      rustToolchain =
+        ({ pkgs, pkgs-stable, ... }: {
+
+          nixpkgs.overlays = [
+            fenix.overlays.default
+          ];
+          environment.systemPackages = with pkgs; [
+            (fenix.packages.x86_64-linux.stable.withComponents [
+              "cargo"
+              "clippy"
+              "rust-src"
+              "rustc"
+              "rustfmt"
+              "rust-analyzer"
+            ])
+            gcc
+          ];
+        })
+      ;
     in
     {
       packages.x86_64-linux.default = fenix.packages.x86_64-linux.stable.toolchain;
@@ -67,49 +86,20 @@
       };
       nixosConfigurations = {
         # Please replace my-nixos with your hostname
-        nixos = nixpkgs.lib.nixosSystem rec {
+        nixos = nixpkgs.lib.nixosSystem {
           system = "x86_64-linux";
           # The `specialArgs` parameter passes the
           # non-default nixpkgs instances to other nix modules
           specialArgs = {
             # To use packages from nixpkgs-stable,
             # we configure some parameters for it first
-            pkgs-stable = import nixpkgs-stable {
-              # Refer to the `system` parameter from
-              # the outer scope recursively
-              inherit system;
-              config.allowUnfree = true;
-            };
           };
           modules = [
-            ({ pkgs, pkgs-stable, ... }: {
-
-              nixpkgs.overlays = [
-                fenix.overlays.default
-                (self: super: {
-                  # wezterm = pkgs-stable.wezterm;
-                  # hyprland = pkgs-stable.hyprland;
-                })
-              ];
-              nix.registry = {
-                myShell.flake = self;
-              };
-              environment.systemPackages = with pkgs; [
-                (fenix.packages.x86_64-linux.stable.withComponents [
-                  "cargo"
-                  "clippy"
-                  "rust-src"
-                  "rustc"
-                  "rustfmt"
-                  "rust-analyzer"
-                ])
-                gcc
-              ];
-            })
+            rustToolchain
             sops-nix.nixosModules.sops
             # Import the previous configuration.nix we used,
             # so the old configuration file still takes effect
-            ./configuration.nix
+            ./nixos-main/configuration.nix
             ./fcitx5
             # catppuccin/nix
             catppuccin.nixosModules.catppuccin
@@ -127,13 +117,59 @@
                 ];
                 users.tony = {
                   imports = [
-                    ./home.nix
+                    ./home/tony.nix
+                    ./nixos-main/home_ssh.nix
+                    ./nixos-main/home_wayland.nix
                   ];
                 };
                 backupFileExtension = "backup";
                 extraSpecialArgs = { inherit inputs; };
               };
-
+            }
+          ];
+        };
+        nixos-2 = nixpkgs.lib.nixosSystem {
+          system = "x86_64-linux";
+          # The `specialArgs` parameter passes the
+          # non-default nixpkgs instances to other nix modules
+          modules = [
+            rustToolchain
+            sops-nix.nixosModules.sops
+            # Import the previous configuration.nix we used,
+            # so the old configuration file still takes effect
+            ./nixos-node1/configuration.nix
+            ./fcitx5
+            # catppuccin/nix
+            catppuccin.nixosModules.catppuccin
+            # make home-manager as a module of nixos
+            # so that home-manager configuration will be deployed automatically when executing `nixos-rebuild switch`
+            home-manager.nixosModules.home-manager
+            {
+              home-manager = {
+                useGlobalPkgs = true;
+                useUserPackages = true;
+                sharedModules = [
+                  nvimdots.homeManagerModules.default
+                  catppuccin.homeModules.catppuccin
+                  nushell-cfg.homeManagerModules.default
+                ];
+                users.tony = {
+                  imports = [
+                    ./home/tony.nix
+                    ./nixos-node1/home_ssh.nix
+                    ./nixos-node1/home_wayland.nix
+                  ];
+                };
+                users.jerry = {
+                  imports = [
+                    ./home/jerry.nix
+                    ./nixos-node1/home_ssh.nix
+                    ./nixos-node1/home_wayland.nix
+                  ];
+                };
+                backupFileExtension = "backup";
+                extraSpecialArgs = { inherit inputs; };
+              };
             }
           ];
         };

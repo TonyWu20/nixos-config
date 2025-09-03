@@ -2,10 +2,11 @@ keys:
   - &admin_nix age1ja52fcykuq6lh8velxv4eqawz293ak6x37xljx08lvqps25lv9nqe8j90f
   - &server_klt age1emnjledw64tpnvxgf8dgv938tg38exh04lkaxxttfl25j3z4t9uqdr4e3u
   - &server_nix age1uwqerl8e2uq2qur2q7c9k2pkhzzg0829mm6gnh9ucphrug2t54ds2gp5tv
+  - &server_nix2 age1cq3wdv06zentg23ucw4fhqmk775gemqc29yesm34jhtk688ldshq903amh
 creation_rules:
   - path_regex: secrets/[^/]+\.(yaml|json|env|ini)$
     key_groups:
       - age:
           - *admin_nix
-          - *server_klt
           - *server_nix
+          - *server_nix2
