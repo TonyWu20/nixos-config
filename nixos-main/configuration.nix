@@ -13,5 +13,6 @@
       ./slurm.nix
       ./cache.nix
     ];
+  networking.hostName = "nixos"; # Define your hostname.
 }
 

@@ -30,5 +30,6 @@
       ];
     };
   };
+  networking.hostName = "nixos-2"; # Define your hostname.
 }
 
