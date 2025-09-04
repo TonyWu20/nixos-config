@@ -13,6 +13,7 @@
     set -U FZF_COMPLETE 1
     set -ga PATH ~/.cargo/bin/
     bass source /etc/set-environment
+    source ${pkgs.fish}/share/fish/completions/rsync.fish
     ";
     shellAbbrs = {
       vim = "nvim";
@@ -50,6 +51,7 @@
     fishPlugins.done
     fishPlugins.bass
     fishPlugins.forgit
+    fishPlugins.fifc
   ];
 }
 

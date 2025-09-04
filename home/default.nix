@@ -108,6 +108,7 @@
     nushell
     sad
     delta
+    rsync
 
     pkg-config
 
