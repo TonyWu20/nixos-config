@@ -36,5 +36,17 @@
       hostname = "10.0.0.3";
       identityFile = "~/.ssh/id_ed25519";
     };
+    matchBlocks.font = {
+      host = "font";
+      user = "fontainebleau";
+      hostname = "10.147.17.190";
+      identityFile = "~/.ssh/id_ed25519";
+    };
+    matchBlocks.j = {
+      host = "j";
+      user = "j";
+      hostname = "10.147.17.49";
+      identityFile = "~/.ssh/id_ed25519";
+    };
   };
 }

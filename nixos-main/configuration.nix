@@ -15,5 +15,12 @@
     ];
   networking.hostName = "nixos"; # Define your hostname.
   networking.domain = "nixCluster"; # Define your domain.
+  # nixpkgs.hostPlatform = {
+  #   gcc.arch = "broadwell";
+  #   gcc.tune = "broadwell";
+  #   system = "x86_64-linux";
+  # };
+  nix.settings.system-features = [ "nixos-test" "benchmark" "big-parallel" "gccarch-broadwell" "kvm" ];
+
 }
 

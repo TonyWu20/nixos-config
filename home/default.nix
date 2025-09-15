@@ -124,6 +124,7 @@
     source-han-mono
     noto-fonts
     source-sans
+    source-sans-pro
 
     # Self-packaged CASTEP v25.1.2
     #castep_25_12
