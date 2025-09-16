@@ -20,10 +20,11 @@
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINrya8j0XoeQhKOFG/9lVcAlbD4k5NvGDVuvlOd0WYP0 tony.w21@gmail.com"
     ];
     shell = pkgs.fish;
+    uid = 1001;
   };
   nix = {
     settings = {
-      substituters = lib.mkForce [
+      substituters = lib.mkBefore [
         "http://10.0.0.2"
       ];
       trusted-public-keys = [
