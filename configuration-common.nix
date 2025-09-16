@@ -107,6 +107,7 @@
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMqIz6gNydwx4jPWhusIUBHY0eWG92uVsl4zHsGdOCHG tony.w21@gmail.com= tony"
     ];
     shell = pkgs.fish;
+    uid = 1000;
   };
 
   programs.firefox.enable = true;
