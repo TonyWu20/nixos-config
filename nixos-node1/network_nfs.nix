@@ -13,18 +13,30 @@
     "/export/castep_jobs" = {
       device = "10.0.0.2:/castep_jobs";
       fsType = "nfs";
+      options = [
+        "users"
+      ];
     };
     "/export/CASTEP-6.11-nixos" = {
       device = "10.0.0.2:/CASTEP-6.11-nixos";
       fsType = "nfs";
+      options = [
+        "users"
+      ];
     };
     "/export/CASTEP-25.12-nixos" = {
       device = "10.0.0.2:/CASTEP-25.12-nixos";
       fsType = "nfs";
+      options = [
+        "users"
+      ];
     };
     "/export/castep_devshell" = {
       device = "10.0.0.2:/castep_devshell";
       fsType = "nfs";
+      options = [
+        "users"
+      ];
     };
   };
 
