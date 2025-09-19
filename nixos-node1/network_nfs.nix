@@ -13,30 +13,18 @@
     "/export/castep_jobs" = {
       device = "10.0.0.2:/castep_jobs";
       fsType = "nfs";
-      options = [
-        "users"
-      ];
     };
-    "/export/CASTEP-6.11-nixos" = {
-      device = "10.0.0.2:/CASTEP-6.11-nixos";
+    "/export/g16" = {
+      device = "10.0.0.2:/g16";
       fsType = "nfs";
-      options = [
-        "users"
-      ];
     };
-    "/export/CASTEP-25.12-nixos" = {
-      device = "10.0.0.2:/CASTEP-25.12-nixos";
+    "/export/gauss_shell" = {
+      device = "10.0.0.2:/gauss_shell";
       fsType = "nfs";
-      options = [
-        "users"
-      ];
     };
-    "/export/castep_devshell" = {
-      device = "10.0.0.2:/castep_devshell";
+    "/export/gaussian_jobs" = {
+      device = "10.0.0.2:/gaussian_jobs";
       fsType = "nfs";
-      options = [
-        "users"
-      ];
     };
   };
 

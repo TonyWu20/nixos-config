@@ -114,12 +114,20 @@
                   nvimdots.homeManagerModules.default
                   catppuccin.homeModules.catppuccin
                   nushell-cfg.homeManagerModules.default
+                  inputs.sops-nix.homeManagerModules.sops
                 ];
                 users.tony = {
                   imports = [
                     ./home/tony.nix
                     ./nixos-main/home_ssh.nix
                     ./nixos-main/home_wayland.nix
+                  ];
+                };
+                users.jerry = {
+                  imports = [
+                    ./home/jerry.nix
+                    ./nixos-node1/home_ssh.nix
+                    ./nixos-node1/home_wayland.nix
                   ];
                 };
                 backupFileExtension = "backup";
@@ -152,6 +160,7 @@
                   nvimdots.homeManagerModules.default
                   catppuccin.homeModules.catppuccin
                   nushell-cfg.homeManagerModules.default
+                  inputs.sops-nix.homeManagerModules.sops
                 ];
                 users.tony = {
                   imports = [

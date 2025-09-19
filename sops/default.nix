@@ -10,5 +10,13 @@
       group = config.systemd.services.munged.serviceConfig.Group;
       mode = "0400";
     };
+    secrets."tony-ssh/ssh.key" = {
+      mode = "0440";
+      group = config.users.groups.nixGitUsers.name;
+    };
+    secrets."jerry-ssh/ssh.key" = {
+      mode = "0440";
+      group = config.users.groups.nixGitUsers.name;
+    };
   };
 }

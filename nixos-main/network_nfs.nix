@@ -15,30 +15,30 @@
       options = [ "bind" "users" ];
       fsType = "nfs";
     };
-    "/export/CASTEP-6.11-nixos" = {
-      device = "/home/tony/Downloads/CASTEP-6.11-nixos";
-      options = [ "bind" "users" ];
+    "/export/gauss_shell" = {
+      device = "/home/tony/Downloads/gauss_shell";
+      options = [ "bind" "exec" ];
       fsType = "nfs";
     };
-    "/export/CASTEP-25.12-nixos" = {
-      device = "/home/tony/Downloads/CASTEP-25.12-nixos";
-      options = [ "bind" "users" ];
+    "/export/g16" = {
+      device = "/home/tony/Downloads/g16";
+      options = [ "bind" "exec" "gid=1009" "mode=0770" ];
       fsType = "nfs";
     };
-    "/export/castep_devshell" = {
-      device = "/home/tony/Downloads/castep_devshell";
-      options = [ "bind" "users" ];
+    "/export/gaussian_jobs" = {
+      device = "localhost:/gaussian_jobs";
+      options = [ "bind" "exec" "gid=1009" "mode=0770" ];
       fsType = "nfs";
     };
   };
   services.nfs.server = {
     enable = true;
     exports = ''
-      /export       10.0.0.2(rw,fsid=0,no_subtree_check) 10.0.0.3(rw,fsid=0,no_subtree_check)
-      /export/castep_jobs     *(rw,nohide,insecure,no_subtree_check)
-      /export/CASTEP-25.12-nixos     *(rw,nohide,insecure,no_subtree_check)
-      /export/CASTEP-6.11-nixos   *(rw,nohide,insecure,no_subtree_check)
-      /export/castep_devshell     *(rw,nohide,insecure,no_subtree_check)
+      /export         *(rw,fsid=0,no_subtree_check)
+      /export/castep_jobs         *(rw,no_subtree_check,insecure,nohide)
+      /export/gauss_shell         *(rw,nohide,insecure,no_subtree_check,all_squash,anonuid=45500,anongid=1009)
+      /export/g16         *(rw,nohide,insecure,no_subtree_check,all_squash,anonuid=45500,anongid=1009)
+      /export/gaussian_jobs         *(rw,nohide,insecure,no_subtree_check,all_squash,anonuid=45500,anongid=1009)
     '';
     # fixed rpc.statd port; for firewall
     lockdPort = 4001;

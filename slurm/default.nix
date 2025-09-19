@@ -17,7 +17,7 @@ in
     };
     nodeName = [
       "nixos CPUs=44 Boards=1 SocketsPerBoard=2 CoresPerSocket=22 ThreadsPerCore=1 RealMemory=128699 Gres=gpu:nvidia_geforce_gtx_1070:1"
-      "nixos-2 CPUs=44 Boards=1 SocketsPerBoard=2 CoresPerSocket=22 ThreadsPerCore=1 RealMemory=128699 Gres=gpu:nvidia_geforce_gtx_1080_ti:1"
+      "nixos-2 CPUs=88 Boards=1 SocketsPerBoard=2 CoresPerSocket=22 ThreadsPerCore=2 RealMemory=128676 Gres=gpu:nvidia_geforce_gtx_1080_ti:1"
     ];
     clusterName = "nixostest";
     partitionName = [ "debug Nodes=ALL Default=YES MaxTime=INFINITE State=UP" ];
