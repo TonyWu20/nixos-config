@@ -39,6 +39,7 @@
       mode = "0400";
     };
     secrets."jerry-ssh/ssh.key" = {
+      path = "/home/jerry/.ssh/id_ed25519";
       mode = "0400";
     };
   };

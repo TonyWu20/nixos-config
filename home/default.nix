@@ -3,16 +3,9 @@
   imports = [
     ../starship.nix
     ../nvim
-    ../hypr
     ../wezterm
     ../tmux
     ../fish
-    ../rime
-    ../waybar
-    ../fcitx5/home.nix
-    ../tex
-    ../tofi
-    ../neomutt
   ];
   # TODO please change the username & home directory to your own
   home.sessionVariables = {

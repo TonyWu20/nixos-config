@@ -146,7 +146,49 @@
             # Import the previous configuration.nix we used,
             # so the old configuration file still takes effect
             ./nixos-node1/configuration.nix
-            ./fcitx5
+            catppuccin.nixosModules.catppuccin
+            # make home-manager as a module of nixos
+            # so that home-manager configuration will be deployed automatically when executing `nixos-rebuild switch`
+            home-manager.nixosModules.home-manager
+            {
+              home-manager = {
+                useGlobalPkgs = true;
+                useUserPackages = true;
+                sharedModules = [
+                  nvimdots.homeManagerModules.default
+                  catppuccin.homeModules.catppuccin
+                  nushell-cfg.homeManagerModules.default
+                  inputs.sops-nix.homeManagerModules.sops
+                ];
+                users.tony = {
+                  imports = [
+                    ./home/tony-node.nix
+                    ./nixos-node1/home_ssh.nix
+                    ./nixos-node1/home_wayland.nix
+                  ];
+                };
+                users.jerry = {
+                  imports = [
+                    ./home/jerry.nix
+                    ./nixos-node1/home_ssh.nix
+                    ./nixos-node1/home_wayland.nix
+                  ];
+                };
+                backupFileExtension = "backup";
+                extraSpecialArgs = { inherit inputs; };
+              };
+            }
+          ];
+        };
+        "nixos-qiuyang" = nixpkgs.lib.nixosSystem {
+          system = "x86_64-linux";
+          modules = [
+            rustToolchain
+            sops-nix.nixosModules.sops
+            # Import the previous configuration.nix we used,
+            # so the old configuration file still takes effect
+            ./nixos-node2/configuration.nix
+            # ./fcitx5
             # catppuccin/nix
             catppuccin.nixosModules.catppuccin
             # make home-manager as a module of nixos
@@ -164,16 +206,12 @@
                 ];
                 users.tony = {
                   imports = [
-                    ./home/tony.nix
-                    ./nixos-node1/home_ssh.nix
-                    ./nixos-node1/home_wayland.nix
+                    ./home/tony-node.nix
                   ];
                 };
-                users.jerry = {
+                users.qiuyang = {
                   imports = [
-                    ./home/jerry.nix
-                    ./nixos-node1/home_ssh.nix
-                    ./nixos-node1/home_wayland.nix
+                    ./home/qiuyang.nix
                   ];
                 };
                 backupFileExtension = "backup";
@@ -181,6 +219,7 @@
               };
             }
           ];
+
         };
       };
     };

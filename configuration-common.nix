@@ -106,6 +106,7 @@
     openssh.authorizedKeys.keys = [
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMqIz6gNydwx4jPWhusIUBHY0eWG92uVsl4zHsGdOCHG tony.w21@gmail.com= tony"
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILzp6pyWcJnx6btvH8yeLMLMBrkq0kpxwb9i8OuMRzE4 jerry@nixos-2"
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILtwiC0q/QY4mx8ioxS+dIn6bWWCe7r8V79+kH5MgWZU qiuyang@nixos-qiuyang"
     ];
     shell = pkgs.fish;
     uid = 1000;
@@ -117,9 +118,20 @@
     openssh.authorizedKeys.keys = [
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAbR3ws1aSpPFp9wblhtHpJk3F5qyD/lqwjiXTc0zLku root@JerryDK"
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINrya8j0XoeQhKOFG/9lVcAlbD4k5NvGDVuvlOd0WYP0 tony.w21@gmail.com"
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILtwiC0q/QY4mx8ioxS+dIn6bWWCe7r8V79+kH5MgWZU qiuyang@nixos-qiuyang"
     ];
     shell = pkgs.fish;
     uid = 1001;
+  };
+  users.users.qiuyang = {
+    isNormalUser = true;
+    extraGroups = [ "wheel" "networkmanager" ]; # Enable ‘sudo’ for the user.
+    openssh.authorizedKeys.keys = [
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMqIz6gNydwx4jPWhusIUBHY0eWG92uVsl4zHsGdOCHG tony.w21@gmail.com= tony"
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILzp6pyWcJnx6btvH8yeLMLMBrkq0kpxwb9i8OuMRzE4 jerry@nixos-2"
+    ];
+    shell = pkgs.fish;
+    uid = 1002;
   };
   users.users.gaussian = {
     isSystemUser = true;
@@ -129,16 +141,14 @@
   users.groups = {
     nixGitUsers = {
       gid = 1008;
-      members = [ "tony" "jerry" ];
+      members = [ "tony" "jerry" "qiuyang" ];
     };
     gaussian = {
       gid = 1009;
-      members = [ "tony" "jerry" "gaussian" ];
+      members = [ "tony" "jerry" "qiuyang" "gaussian" ];
     };
   };
 
-  programs.firefox.enable = true;
-  programs.hyprland.enable = true;
   programs.fish.enable = true;
   programs.tmux = {
     enable = true;
@@ -174,10 +184,8 @@
     fishPlugins.forgit
     ripgrep
     fd
-    greetd
     zerotierone
     wezterm
-    hyprland
     tmux
     wl-clipboard-rs
     slurm
@@ -206,15 +214,6 @@
   services.devmon.enable = true;
   services.udisks2.enable = true;
   # services.rustdesk-server = { enable = true; };
-  services.greetd = {
-    enable = true;
-    settings = {
-      default_session = {
-        command = "${pkgs.tuigreet}/bin/tuigreet --time --cmd Hyprland";
-        user = "greeter";
-      };
-    };
-  };
   systemd.services.numLockOnTty = {
     wantedBy = [ "multi-user.target" ];
     serviceConfig = {

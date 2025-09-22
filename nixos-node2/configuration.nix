@@ -2,7 +2,7 @@
 # your system. Help is available in the configuration.nix(5) man page, on
 # https://search.nixos.org/options and in the NixOS manual (`nixos-help`).
 
-{ lib, pkgs, ... }:
+{ lib, ... }:
 {
   imports =
     [
@@ -21,7 +21,7 @@
       ];
     };
   };
-  networking.hostName = "nixos-2"; # Define your hostname.
+  networking.hostName = "nixos-qiuyang"; # Define your hostname.
   networking.domain = "nixCluster"; # Define your domain.
 }
 
