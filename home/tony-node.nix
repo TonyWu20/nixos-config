@@ -2,13 +2,6 @@
   # basic configuration of git, please change to your own
   imports = [
     ./default.nix
-    ../rime
-    ../neomutt
-    ../waybar
-    ../fcitx5/home.nix
-    ../tex
-    ../hypr
-    ../tofi
   ];
   home.username = "tony";
   home.homeDirectory = "/home/tony";
@@ -37,13 +30,26 @@
       hostname = "github.com";
       identityFile = config.sops.secrets."tony-ssh/ssh.key".path;
     };
+    matchBlocks.master = {
+      host = "master";
+      user = "tony";
+      hostname = "10.0.0.2";
+      identityFile = config.sops.secrets."tony-ssh/ssh.key".path;
+    };
+    matchBlocks.node1 = {
+      host = "node1";
+      user = "tony";
+      hostname = "10.0.0.3";
+      identityFile = config.sops.secrets."tony-ssh/ssh.key".path;
+    };
   };
   sops = {
     defaultSopsFile = ../sops/secrets/my_secrets.yaml;
-    age.sshKeyPaths = [ "/home/tony/.ssh/id_ed25519" ];
+    age.sshKeyPaths = [ "${config.home.homeDirectory}/.ssh/id_ed25519" ];
     age.generateKey = false;
     secrets."tony-ssh/ssh.key" = {
       mode = "0400";
+      # path = "${config.home.homeDirectory}/.ssh/id_ed25519";
     };
   };
 }

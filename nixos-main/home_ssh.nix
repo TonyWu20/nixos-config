@@ -37,6 +37,13 @@
       identityFile = config.sops.secrets."tony-ssh/ssh.key".path;
       forwardAgent = true;
     };
+    matchBlocks.node2 = {
+      host = "nixos-3";
+      user = "tony";
+      hostname = "10.0.0.4";
+      identityFile = config.sops.secrets."tony-ssh/ssh.key".path;
+      forwardAgent = true;
+    };
     matchBlocks.j = {
       host = "j";
       user = "j";

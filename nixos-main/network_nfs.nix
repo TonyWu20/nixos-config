@@ -5,14 +5,15 @@
     address = "10.0.0.2";
     prefixLength = 24;
   }];
-  networking.extraHosts = ''
-    10.0.0.2 nixos
-    10.0.0.3 nixos-2
-  '';
+  networking.hosts = {
+    "10.0.0.4" = [ "nixos-3" ];
+    "10.0.0.3" = [ "nixos-2" ];
+    "10.0.0.2" = [ "nixos" ];
+  };
   fileSystems = {
     "/export/castep_jobs" = {
       device = "/home/tony/Downloads/castep_jobs";
-      options = [ "bind" "users" ];
+      options = [ "bind" "exec" ];
       fsType = "nfs";
     };
     "/export/gauss_shell" = {
@@ -30,6 +31,11 @@
       options = [ "bind" "exec" "gid=1009" "mode=0770" ];
       fsType = "nfs";
     };
+    "/export/Potentials" = {
+      device = "/home/tony/Downloads/Potentials";
+      options = [ "bind" "mode=0770" ];
+      fsType = "nfs";
+    };
   };
   services.nfs.server = {
     enable = true;
@@ -39,6 +45,7 @@
       /export/gauss_shell         *(rw,nohide,insecure,no_subtree_check,all_squash,anonuid=45500,anongid=1009)
       /export/g16         *(rw,nohide,insecure,no_subtree_check,all_squash,anonuid=45500,anongid=1009)
       /export/gaussian_jobs         *(rw,nohide,insecure,no_subtree_check,all_squash,anonuid=45500,anongid=1009)
+      /export/Potentials         *(rw,no_subtree_check,insecure,nohide)
     '';
     # fixed rpc.statd port; for firewall
     lockdPort = 4001;
