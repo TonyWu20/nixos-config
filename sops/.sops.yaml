@@ -1,6 +1,7 @@
 keys:
   - &admin_nix age1ja52fcykuq6lh8velxv4eqawz293ak6x37xljx08lvqps25lv9nqe8j90f
   - &admin_jerry age1jzawnznem32ldhvx4jad6sprnafajrct6der07xz69zqmparruzqyj34xr
+  - &admin_qiuyang age1t9ascrzgdsytwgtscl3y0n44p3jracjut6g247rhkqvmzuy2ys8qemhlh8
   - &server_nix age1uwqerl8e2uq2qur2q7c9k2pkhzzg0829mm6gnh9ucphrug2t54ds2gp5tv
   - &server_nix2 age12zk9lt53vx8krc9afh0jlymyyg7fl4lmm0mqz5jy7sw3zpfneecqsef4tz
   - &server_nix3 age1cp4q0ctxr03c24xe080sfqf5zwy97d2j6wy4rwcsnypy3dk2y9ms4hfhnd
@@ -10,6 +11,7 @@ creation_rules:
       - age:
           - *admin_nix
           - *admin_jerry
+          - *admin_qiuyang
           - *server_nix
           - *server_nix2
           - *server_nix3

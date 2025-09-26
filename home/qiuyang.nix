@@ -41,12 +41,11 @@
   sops = {
     defaultSopsFile = ../sops/secrets/my_secrets.yaml;
     age.sshKeyPaths = [ "/home/qiuyang/.ssh/id_ed25519" ];
-    age.generateKey = false;
+    age.generateKey = true;
     secrets."tony-ssh/ssh.key" = {
       mode = "0400";
     };
     secrets."qiuyang-ssh/ssh.key" = {
-      path = "/home/qiuyang/.ssh/id_ed25519";
       mode = "0400";
     };
   };

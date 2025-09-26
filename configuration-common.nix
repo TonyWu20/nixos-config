@@ -107,6 +107,7 @@
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMqIz6gNydwx4jPWhusIUBHY0eWG92uVsl4zHsGdOCHG tony.w21@gmail.com= tony"
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILzp6pyWcJnx6btvH8yeLMLMBrkq0kpxwb9i8OuMRzE4 jerry@nixos-2"
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILtwiC0q/QY4mx8ioxS+dIn6bWWCe7r8V79+kH5MgWZU qiuyang@nixos-qiuyang"
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINrya8j0XoeQhKOFG/9lVcAlbD4k5NvGDVuvlOd0WYP0 tony.w21@gmail.com"
     ];
     shell = pkgs.fish;
     uid = 1000;
@@ -129,6 +130,7 @@
     openssh.authorizedKeys.keys = [
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMqIz6gNydwx4jPWhusIUBHY0eWG92uVsl4zHsGdOCHG tony.w21@gmail.com= tony"
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILzp6pyWcJnx6btvH8yeLMLMBrkq0kpxwb9i8OuMRzE4 jerry@nixos-2"
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINrya8j0XoeQhKOFG/9lVcAlbD4k5NvGDVuvlOd0WYP0 tony.w21@gmail.com"
     ];
     shell = pkgs.fish;
     uid = 1002;
@@ -150,6 +152,8 @@
   };
 
   programs.fish.enable = true;
+  programs.fzf.fuzzyCompletion = true;
+
   programs.tmux = {
     enable = true;
     keyMode = "vi";

@@ -6,12 +6,18 @@
     ../wezterm
     ../tmux
     ../fish
+    ../fcitx5/home.nix
+    ../rime
   ];
   # TODO please change the username & home directory to your own
   home.sessionVariables = {
     EDITOR = "nvim";
     # SLURM_CONF = builtins.getEnv "SLURM_CONF";
   };
+  home.sessionPath = [
+    "$HOME/.cargo/bin/"
+  ];
+
 
   catppuccin = {
     bat = {
@@ -52,6 +58,7 @@
       };
     };
   };
+  # systemd.user.services.munged.unitConfig.After = [ "sops-nix.service" ];
 
   # link the configuration file in current directory to the specified location in home directory
   # home.file.".config/i3/wallpaper.jpg".source = ./wallpaper.jpg;

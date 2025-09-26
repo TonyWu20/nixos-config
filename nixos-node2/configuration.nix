@@ -10,6 +10,7 @@
       ../configuration-common.nix
       ./hardware-configuration.nix
       ./network_nfs.nix
+      ../nfs/node.nix
     ];
   nix = {
     settings = {
@@ -21,7 +22,7 @@
       ];
     };
   };
-  networking.hostName = "nixos-qiuyang"; # Define your hostname.
+  networking.hostName = "nixos-3"; # Define your hostname.
   networking.domain = "nixCluster"; # Define your domain.
 }
 

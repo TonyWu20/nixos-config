@@ -11,10 +11,11 @@
         set -gF "@catppuccin_''${MODULE_NAME}_color" "#{E:@thm_pink}"
         set -g "@catppuccin_''${MODULE_NAME}_text" "#(df /dev/disk/by-label/nixos -T | awk 'NR==2{print $4,"/",$2}')"
 
-        source "${pkgs.tmuxPlugins.catppuccin}/utils/status_module.conf"
+        source "${pkgs.tmuxPlugins.catppuccin}/share/tmux-plugins/catppuccin/utils/status_module.conf"
       ''
       (builtins.readFile ./tmux_catppuccin.conf)
       "run-shell ${pkgs.tmuxPlugins.cpu}/share/tmux-plugins/cpu/cpu.tmux"
+      "run-shell ${pkgs.tmuxPlugins.catppuccin}/share/tmux-plugins/catppuccin/catppuccin.tmux"
     ];
     terminal = "xterm-256color";
     plugins = with pkgs; [

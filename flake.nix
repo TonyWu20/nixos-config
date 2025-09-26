@@ -146,6 +146,7 @@
             # Import the previous configuration.nix we used,
             # so the old configuration file still takes effect
             ./nixos-node1/configuration.nix
+            ./fcitx5
             catppuccin.nixosModules.catppuccin
             # make home-manager as a module of nixos
             # so that home-manager configuration will be deployed automatically when executing `nixos-rebuild switch`
@@ -180,7 +181,7 @@
             }
           ];
         };
-        "nixos-qiuyang" = nixpkgs.lib.nixosSystem {
+        "nixos-3" = nixpkgs.lib.nixosSystem {
           system = "x86_64-linux";
           modules = [
             rustToolchain
@@ -188,7 +189,7 @@
             # Import the previous configuration.nix we used,
             # so the old configuration file still takes effect
             ./nixos-node2/configuration.nix
-            # ./fcitx5
+            ./fcitx5
             # catppuccin/nix
             catppuccin.nixosModules.catppuccin
             # make home-manager as a module of nixos

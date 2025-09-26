@@ -45,10 +45,11 @@
   };
   sops = {
     defaultSopsFile = ../sops/secrets/my_secrets.yaml;
-    age.sshKeyPaths = [ "/home/tony/.ssh/id_ed25519" ];
+    age.sshKeyPaths = [ "${config.home.homeDirectory}/.ssh/id_ed25519" ];
     age.generateKey = false;
     secrets."tony-ssh/ssh.key" = {
       mode = "0400";
+      # path = "${config.home.homeDirectory}/.ssh/id_ed25519";
     };
   };
 }
