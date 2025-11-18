@@ -2,12 +2,27 @@
 # your system. Help is available in the configuration.nix(5) man page, on
 # https://search.nixos.org/options and in the NixOS manual (`nixos-help`).
 
-{ config, lib, pkgs, ... }:
+{ config, lib, pkgs, options, ... }:
 
 {
   nix.settings.experimental-features = [ "nix-command" "flakes" ];
   nixpkgs.config.allowUnfree = true;
-  programs.nix-ld.enable = true;
+  programs.nix-ld =
+    {
+      enable = true;
+      libraries = options.programs.nix-ld.libraries.default ++ (
+        with pkgs; [
+          dbus # libdbus-1.so.3
+          fontconfig # libfontconfig.so.1
+          freetype # libfreetype.so.6
+          glib # libglib-2.0.so.0
+          libGL # libGL.so.1
+          libxkbcommon # libxkbcommon.so.0
+          xorg.libX11 # libX11.so.6
+          wayland
+        ]
+      );
+    };
   imports =
     [
       # Include the results of the hardware scan.
@@ -108,6 +123,7 @@
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILzp6pyWcJnx6btvH8yeLMLMBrkq0kpxwb9i8OuMRzE4 jerry@nixos-2"
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILtwiC0q/QY4mx8ioxS+dIn6bWWCe7r8V79+kH5MgWZU qiuyang@nixos-qiuyang"
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINrya8j0XoeQhKOFG/9lVcAlbD4k5NvGDVuvlOd0WYP0 tony.w21@gmail.com"
+      "ssh-ed25519 AAAAC3NzaC11ZDI1NTE5AAAAIAdUqI5Qh4/LRgyN0/nTcSRhKjajoGknGyIhhvuDiFOH qiuyang@DM-20240524HWVQ"
     ];
     shell = pkgs.fish;
     uid = 1000;
@@ -153,6 +169,11 @@
 
   programs.fish.enable = true;
   programs.fzf.fuzzyCompletion = true;
+
+  programs.appimage = {
+    enable = true;
+    binfmt = true;
+  };
 
   programs.tmux = {
     enable = true;
@@ -278,7 +299,7 @@
   # Refer to the following link for more details:
   # https://nixos.org/manual/nix/stable/command-ref/conf-file.html#conf-auto-optimise-store
   nix.settings.auto-optimise-store = true;
-  nix.settings.trusted-users = [ "root" "tony" ];
+  nix.settings.trusted-users = [ "root" "tony" "jerry" "qiuyang" ];
   console = {
     earlySetup = true;
     packages = with pkgs; [ terminus_font ];
