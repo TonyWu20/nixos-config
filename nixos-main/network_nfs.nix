@@ -40,7 +40,7 @@
   services.nfs.server = {
     enable = true;
     exports = ''
-      /export         *(rw,fsid=0,no_subtree_check)
+      /export         *(rw,fsid=0,no_subtree_check,insecure)
       /export/castep_jobs         *(rw,no_subtree_check,insecure,nohide)
       /export/gauss_shell         *(rw,nohide,insecure,no_subtree_check,all_squash,anonuid=45500,anongid=1009)
       /export/g16         *(rw,nohide,insecure,no_subtree_check,all_squash,anonuid=45500,anongid=1009)

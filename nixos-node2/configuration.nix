@@ -24,5 +24,8 @@
   };
   networking.hostName = "nixos-3"; # Define your hostname.
   networking.domain = "nixCluster"; # Define your domain.
+  services.slurm.extraConfigPaths = [
+    ../slurm/nixos-node2
+  ];
 }
 
