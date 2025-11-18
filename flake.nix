@@ -126,8 +126,11 @@
                 users.jerry = {
                   imports = [
                     ./home/jerry.nix
-                    ./nixos-node1/home_ssh.nix
-                    ./nixos-node1/home_wayland.nix
+                  ];
+                };
+                users.qiuyang = {
+                  imports = [
+                    ./home/qiuyang.nix
                   ];
                 };
                 backupFileExtension = "backup";
@@ -175,6 +178,11 @@
                     ./nixos-node1/home_wayland.nix
                   ];
                 };
+                users.qiuyang = {
+                  imports = [
+                    ./home/qiuyang.nix
+                  ];
+                };
                 backupFileExtension = "backup";
                 extraSpecialArgs = { inherit inputs; };
               };
@@ -208,6 +216,11 @@
                 users.tony = {
                   imports = [
                     ./home/tony-node.nix
+                  ];
+                };
+                users.jerry = {
+                  imports = [
+                    ./home/jerry.nix
                   ];
                 };
                 users.qiuyang = {

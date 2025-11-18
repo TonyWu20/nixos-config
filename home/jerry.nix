@@ -30,6 +30,12 @@
       hostname = "github.com";
       identityFile = config.sops.secrets."jerry-ssh/ssh.key".path;
     };
+    matchBlocks.nixos = {
+      host = "nixos";
+      user = "tony";
+      hostname = "10.0.0.2";
+      identityFile = config.sops.secrets."jerry-ssh/ssh.key".path;
+    };
   };
   sops = {
     defaultSopsFile = ../sops/secrets/my_secrets.yaml;
@@ -39,7 +45,6 @@
       mode = "0400";
     };
     secrets."jerry-ssh/ssh.key" = {
-      path = "/home/jerry/.ssh/id_ed25519";
       mode = "0400";
     };
   };
