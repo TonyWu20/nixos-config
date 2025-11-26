@@ -23,6 +23,7 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     nushell-cfg.url = "github:TonyWu20/nushell_hm_module";
+    castep_job_submit.url = "git+ssh://git@github.com/TonyWu20/castep_job_submit";
   };
 
   outputs =
@@ -35,6 +36,7 @@
     , catppuccin
     , sops-nix
     , nushell-cfg
+    , castep_job_submit
     , ...
     }:
     let

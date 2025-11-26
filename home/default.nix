@@ -1,4 +1,9 @@
-{ pkgs, config, ... }:
+{ config, pkgs, inputs, ... }:
+let
+  fetch_pot = inputs.castep_job_submit.packages.x86_64-linux.default;
+  slurm_job = pkgs.writeShellScriptBin "slurm_job.sh" (builtins.readFile ../slurm/slurm_job.sh);
+  slurm_lammps = pkgs.writeShellScriptBin "slurm_lammps.sh" (builtins.readFile ../slurm/slurm_lammps.sh);
+in
 {
   imports = [
     ../starship.nix
@@ -183,6 +188,9 @@
 
     # texlive later
     alacritty
+    fetch_pot
+    slurm_job
+    slurm_lammps
   ];
 
 
