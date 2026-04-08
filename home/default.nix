@@ -110,7 +110,6 @@ in
     fzf # A command-line fuzzy finder
     zoxide
     skim
-    nushell
     sad
     delta
     rsync

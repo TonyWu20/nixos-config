@@ -9,21 +9,30 @@
     "$HOME/.cargo/bin"
   ];
   home.sessionVariables.SOPS_AGE_KEY_FILE = "${config.home.homeDirectory}/nixos-config/sops/age/keys.txt";
+
+  programs.delta = {
+    enable = true;
+    enableGitIntegration = true;
+  };
+
   programs.git = {
     enable = true;
     lfs.enable = true;
-    userName = "jerrylizk3";
-    userEmail = "jerrylizk3@gmail.com";
-    delta = {
-      enable = true;
-    };
-    extraConfig = {
-      safe.directory = [
-        "/export/gauss_shell"
-      ];
+    settings = {
+      user = {
+        name = "jerrylizk3";
+        email = "jerrylizk3@gmail.com";
+      };
+      core = { quotepath = false; };
+      extraConfig = {
+        safe.directory = [
+          "/export/gauss_shell"
+        ];
+      };
     };
   };
   programs.ssh = {
+    enableDefaultConfig = false;
     matchBlocks.gh = {
       host = "github.com";
       user = "git";
