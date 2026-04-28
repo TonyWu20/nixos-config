@@ -1,6 +1,8 @@
-{ ... }:
+{ pkgs, ... }:
 {
   programs.neovim = {
+    withRuby = false;
+    withPython3 = true;
     enable = true;
     defaultEditor = true;
     nvimdots = {
@@ -8,10 +10,11 @@
       setBuildEnv = true;
       withBuildTools = true;
     };
-    # enable = true;
-    # extraPackages = with pkgs; [
-    #   go
-    #   python3
-    # ];
+    extraPython3Packages =
+      (ps: with ps; [
+        docformatter
+        isort
+        pynvim
+      ]);
   };
 }
