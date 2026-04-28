@@ -2,11 +2,36 @@
 # your system. Help is available in the configuration.nix(5) man page, on
 # https://search.nixos.org/options and in the NixOS manual (`nixos-help`).
 
-{ config, lib, pkgs, options, ... }:
+{ config, lib, pkgs, options, inputs, ... }:
 
 {
   nix.settings.experimental-features = [ "nix-command" "flakes" ];
-  nixpkgs.config.allowUnfree = true;
+  nixpkgs = {
+    config = {
+      allowUnfree = true;
+      cudaSupport = true;
+      cudaCapabilities = [ "6.1" ];
+      cudaVersion = "12.9";
+    };
+    overlays = [
+      inputs.fenix.overlays.default
+      (final: prev: {
+        # Target the specific CUDA set you are using
+        cudaPackages_12_9 = prev.cudaPackages_12_9.overrideScope (cfinal: cprev: {
+          # Override the cudnn attribute within that scope
+          cudnn = cprev.cudnn.overrideAttrs (oldAttrs: rec{
+            version = "9.11.1.4"; # Your desired version
+            src = prev.fetchurl {
+              # You must provide the URL and hash for the specific version
+              url = "https://developer.download.nvidia.com/compute/cudnn/redist/cudnn/linux-x86_64/cudnn-linux-x86_64-${version}_cuda12-archive.tar.xz";
+              hash = "sha256-YJrEikSORTMoek18YgVr8TD66MOx6yohgIDingAm7Bg=";
+            };
+          });
+        });
+      })
+    ];
+
+  };
   programs.nix-ld =
     {
       enable = true;
@@ -18,7 +43,7 @@
           glib # libglib-2.0.so.0
           libGL # libGL.so.1
           libxkbcommon # libxkbcommon.so.0
-          xorg.libX11 # libX11.so.6
+          libX11 # libX11.so.6
           wayland
         ]
       );
@@ -52,11 +77,12 @@
     # Enable the Nvidia settings menu
     # accessible via `nvidia-settings`.
     nvidiaSettings = true;
+    #package = config.boot.kernelPackages.nvidiaPackages.stable;
 
     package = config.boot.kernelPackages.nvidiaPackages.mkDriver {
-      version = "570.86.16"; # use new 570 drivers
-      sha256_64bit = "sha256-RWPqS7ZUJH9JEAWlfHLGdqrNlavhaR1xMyzs8lJhy9U=";
-      openSha256 = "sha256-DuVNA63+pJ8IB7Tw2gM4HbwlOh1bcDg2AN2mbEU9VPE=";
+      version = "580.142"; # use new 570 drivers
+      sha256_64bit = "sha256-IJFfzz/+icNVDPk7YKBKKFRTFQ2S4kaOGRGkNiBEdWM=";
+      openSha256 = "sha256-9rtqh64TyhDF5fFAYiWl3oDHzKJqyOW3abpcf2iNRT8=";
       settingsSha256 = "sha256-9rtqh64TyhDF5fFAYiWl3oDHzKJqyOW3abpcf2iNRT8=";
       usePersistenced = false;
     };
@@ -189,17 +215,22 @@
     ];
 
   };
+  programs.neovim = {
+    enable = true;
+    withPython3 = true;
+    withRuby = false;
+  };
 
 
   # List packages installed in system profile. To search, run:
   # $ nix search wget
   environment.systemPackages = with pkgs; [
+    mosh
     gcc
     udisks2
     usbutils
     udiskie
     linuxKernel.kernels.linux_6_12
-    neovim # Do not forget to add an editor to edit configuration.nix! The Nano editor is also installed by default.
     wget
     # fish
     fish
@@ -255,8 +286,9 @@
   networking.firewall = {
     enable = true;
     # for NFSv3; view with `rpcinfo -p`
-    allowedTCPPorts = [ 111 2049 4000 4001 4002 20048 22 3000 8000 8080 10000 ];
-    allowedUDPPorts = [ 111 2049 4000 4001 4002 20048 ];
+    allowedTCPPorts = [ 111 53 1080 2049 4000 4001 4002 20048 22 3000 8000 8080 10000 ];
+    allowedUDPPorts = [ 111 53 1080 2049 4000 4001 4002 20048 22 ];
+    allowedUDPPortRanges = [{ from = 60000; to = 65535; }];
   };
   # networking.firewall.allowedUDPPorts = [ ... ];
   # Or disable the firewall altogether.
