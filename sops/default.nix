@@ -18,5 +18,20 @@
       mode = "0440";
       group = config.users.groups.nixGitUsers.name;
     };
+    secrets."dev_vars" = {
+      poe_chatbot_api = { };
+      yunwu_claude_api = { };
+      foxcode_claude_token = { };
+      xcode_best_claude_token = { };
+      claude_zz_token = { };
+      telegram_bot_token = { };
+      telegram_user_id = { };
+      discord_bot_token = { };
+      discord_claude_channel_id = { };
+      discord_inspect_channel_id = { };
+      discord_notify_user_ids = { };
+      discord_summary_channel_id = { };
+      deepseek_token = { };
+    };
   };
 }
