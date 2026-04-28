@@ -45,6 +45,13 @@
         identityFile = config.sops.secrets."tony-ssh/ssh.key".path;
         forwardAgent = true;
       };
+      m4 = {
+        host = "macm4";
+        user = "tony";
+        hostname = "10.0.0.5";
+        identityFile = config.sops.secrets."tony-ssh/ssh.key".path;
+        forwardAgent = false;
+      };
       j = {
         host = "j";
         user = "j";
