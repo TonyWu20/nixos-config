@@ -1,8 +1,24 @@
-{ config, pkgs, inputs, ... }:
+{ config, pkgs, inputs, lib, ... }:
 let
   fetch_pot = inputs.castep_job_submit.packages.x86_64-linux.default;
   slurm_job = pkgs.writeShellScriptBin "slurm_job.sh" (builtins.readFile ../slurm/slurm_job.sh);
   slurm_lammps = pkgs.writeShellScriptBin "slurm_lammps.sh" (builtins.readFile ../slurm/slurm_lammps.sh);
+  catppuccin_programs = [
+    "bat"
+    "btop"
+    "delta"
+    "eza"
+    "fish"
+    "fzf"
+    "hyprland"
+    "hyprlock"
+    "nushell"
+    "skim"
+    "starship"
+    "tofi"
+    "yazi"
+  ];
+
 in
 {
   imports = [
@@ -24,37 +40,7 @@ in
   ];
 
 
-  catppuccin = {
-    bat = {
-      enable = true;
-      flavor = "macchiato";
-    };
-
-    fzf = {
-      enable = true;
-      flavor = "macchiato";
-    };
-    hyprland = {
-      enable = true;
-      flavor = "macchiato";
-    };
-    hyprlock = {
-      enable = true;
-      flavor = "macchiato";
-    };
-    tofi = {
-      enable = true;
-      flavor = "macchiato";
-    };
-    skim = {
-      enable = true;
-      flavor = "macchiato";
-    };
-    fish = {
-      enable = true;
-      flavor = "macchiato";
-    };
-  };
+  catppuccin = lib.attrsets.genAttrs catppuccin_programs (prog: { enable = true; flavor = "macchiato"; });
   services.udiskie = {
     enable = true;
     settings = {
@@ -94,7 +80,6 @@ in
     # feel free to add your own or remove some of them
     bat
     fastfetch
-    yazi # terminal file manager
     git-credential-manager
     git-lfs
     gh
@@ -116,7 +101,9 @@ in
 
     pkg-config
 
-    python3
+    tree-sitter
+    (python3.withPackages
+      (ps: with ps;[ ps.pynvim huggingface-hub ]))
 
     # fonts
     fontconfig
@@ -160,7 +147,10 @@ in
     neomutt # email client in command line
     pandoc
 
-    btop-cuda # replacement of htop/nmon
+    (btop-cuda.overrideAttrs
+      (old: {
+        cmakeFlags = old.cmakeFlags ++ [ (lib.cmakeBool "BTOP_GPU" true) ];
+      })) # replacement of htop/nmon
     iotop # io monitoring
     iftop # network monitoring
 
@@ -191,50 +181,87 @@ in
     slurm_job
     slurm_lammps
   ];
+  programs = {
 
-
-
-  programs.gh = {
-    enable = true;
-    gitCredentialHelper.enable = true;
-    settings.editor = "nvim";
-  };
-
-  programs.ssh = {
-    enable = true;
-    # forwardAgent = true;
-    # addKeysToAgent = "yes";
-  };
-
-  programs.bat =
-    {
+    yazi = {
       enable = true;
+      shellWrapperName = "y";
+      settings = {
+        plugins = {
+          prepend_previewers = [{
+            mime = "image/tiff";
+            run = "magick";
+          }
+            {
+              name = "*.tif";
+              run = "magick";
+            }];
+          prepend_preloaders = [
+            { mime = "image/tiff"; run = "magick"; }
+          ];
+        };
+      };
     };
-  programs.fzf = {
-    enable = true;
-    enableFishIntegration = true;
+
+    delta = {
+      enable = true;
+      enableGitIntegration = true;
+      options = {
+        side-by-side = true;
+      };
+    };
+    gh = {
+      enable = true;
+      gitCredentialHelper.enable = true;
+      settings.editor = "nvim";
+    };
+    ssh = {
+      enable = true;
+      # forwardAgent = true;
+      # addKeysToAgent = "yes";
+    };
+    bat =
+      {
+        enable = true;
+      };
+    fzf = {
+      enable = true;
+      enableFishIntegration = true;
+      defaultOptions = [
+        "--height 80%"
+        "--reverse"
+        "--border"
+        "--preview-window right:67%"
+      ];
+      defaultCommand = "fd --type file -HI -E .git --color=always";
+      fileWidgetOptions = [
+        "--preview 'bat -n --color=always {}'"
+        "--bind 'ctrl-/:change-preview-window(down|hidden|)'"
+        "--walker-skip .git,node_modules,target"
+      ];
+    };
+    # starship - an customizable prompt for any shell
+    bash = {
+      enable = true;
+      enableCompletion = true;
+      # TODO add your custom bashrc here
+      bashrcExtra = ''
+        export PATH="$PATH:$HOME/bin:$HOME/.local/bin:$HOME/go/bin"
+      '';
+
+      # set some aliases, feel free to add more or remove some
+      # shellAliases = {
+      #   k = "kubectl";
+      #   urldecode = "python3 -c 'import sys, urllib.parse as ul; print(ul.unquote_plus(sys.stdin.read()))'";
+      #   urlencode = "python3 -c 'import sys, urllib.parse as ul; print(ul.quote_plus(sys.stdin.read()))'";
+      # };
+    };
+    direnv.enable = true;
+    direnv.enableNushellIntegration = true;
+    direnv.nix-direnv.enable = true;
+    # Let home Manager install and manage itself.
+    home-manager.enable = true;
   };
-
-  # starship - an customizable prompt for any shell
-
-  programs.bash = {
-    enable = true;
-    enableCompletion = true;
-    # TODO add your custom bashrc here
-    bashrcExtra = ''
-      export PATH="$PATH:$HOME/bin:$HOME/.local/bin:$HOME/go/bin"
-    '';
-
-    # set some aliases, feel free to add more or remove some
-    # shellAliases = {
-    #   k = "kubectl";
-    #   urldecode = "python3 -c 'import sys, urllib.parse as ul; print(ul.unquote_plus(sys.stdin.read()))'";
-    #   urlencode = "python3 -c 'import sys, urllib.parse as ul; print(ul.quote_plus(sys.stdin.read()))'";
-    # };
-  };
-  programs.direnv.enable = true;
-  programs.direnv.enableNushellIntegration = true;
-  programs.direnv.nix-direnv.enable = true;
 
   # This value determines the home Manager release that your
   # configuration is compatible with. This helps avoid breakage
@@ -245,7 +272,4 @@ in
   # the home Manager release notes for a list of state version
   # changes in each release.
   home.stateVersion = "25.05";
-
-  # Let home Manager install and manage itself.
-  programs.home-manager.enable = true;
 }
