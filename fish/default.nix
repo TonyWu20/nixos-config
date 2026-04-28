@@ -1,22 +1,43 @@
-{ config, pkgs, ... }: {
+{ config, pkgs, lib, ... }: {
   programs.fish = {
     enable = true;
-    interactiveShellInit = "
-    fish_vi_key_bindings
-    zoxide init fish | source
-    set -gx FZF_DEFAULT_OPTS --height 80% --reverse --border --preview-window right:67%
-    set -gx FZF_DEFAULT_COMMAND 'fd --type file -HI -E .git --color=always'
-    set -gx FZF_PREVIEW_FILE_CMD 'bat --style=header,numbers,grid --line-range :300 --color=always'
-    set -gx FZF_PREVIEW_DIR_CMD 'eza -l --git --no-permissions --icons --no-user --level=2 -T '
-    set -gx FZF_CTRL_T_OPTS '--walker-skip .git,node_modules,target --preview \"bat -n --color=always {}\" --bind \"ctrl-/:change-preview-window(down|hidden|)\"'
-    set -U FZF_TMUX 0
-    set -U FZF_COMPLETE 1
-    bass source /etc/set-environment
-    source ${pkgs.fish}/share/fish/completions/rsync.fish
-    set -ga PATH ~/.cargo/bin/
-    ";
+    interactiveShellInit = builtins.concatStringsSep "\n" [
+      ''
+        fish_vi_key_bindings
+        zoxide init fish | source
+        set -gx FZF_DEFAULT_OPTS --height 80% --reverse --border --preview-window right:67%
+        set -gx FZF_DEFAULT_COMMAND 'fd --type file -HI -E .git --color=always'
+        set -gx FZF_PREVIEW_FILE_CMD 'bat --style=header,numbers,grid --line-range :300 --color=always'
+        set -gx FZF_PREVIEW_DIR_CMD 'eza -l --git --no-permissions --icons --no-user --level=2 -T '
+        set -gx FZF_CTRL_T_OPTS '--walker-skip .git,node_modules,target --preview \"bat -n --color=always {}\" --bind \"ctrl-/:change-preview-window(down|hidden|)\"'
+        set -U FZF_TMUX 0
+        set -U FZF_COMPLETE 1
+        bass source /etc/set-environment
+        source ${pkgs.fish}/share/fish/completions/rsync.fish
+        set -ga PATH ~/.cargo/bin/
+      ''
+      ''
+        # Automatically export sops secrets in UPPERCASE
+        ${lib.concatStringsSep "\n" (lib.mapAttrsToList (name: value: 
+          "set -gx ${lib.toUpper name} (cat ${value.path})"
+        ) config.sops.secrets.dev_vars)}
+      ''
+      ''
+        set -gx POE_BASE_URL https://api.poe.com
+        set -gx YUNWU_BASE_URL https://yunwu.ai
+        set -gx FOXCODE_BASE_URL https://code.newcli.com/claude/ultra
+        set -gx XCODE_BEST_BASE_URL https://xcode.best
+        set -gx CLAUDE_BASE_URL https://claude-zhongzhuan.cloud
+        set -gx ANTHROPIC_API_KEY ""
+        set -gx ANTHROPIC_AUTH_TOKEN $DEEPSEEK_TOKEN
+        set -gx DEEPSEEK_BASE_URL https://api.deepseek.com/anthropic
+        set -gx ANTHROPIC_BASE_URL $DEEPSEEK_BASE_URL
+      ''
+
+    ];
     shellAbbrs = {
       vim = "nvim";
+      ls = "eza";
     };
     functions = {
       num_kpt_geom = {
