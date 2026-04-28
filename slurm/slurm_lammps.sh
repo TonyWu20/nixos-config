@@ -8,6 +8,9 @@ cat >slurm_job_${TASK}.sh <<EOF
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --gres=shard:1
+#SBATCH --gres-flags=disable-binding
+#SBATCH --mail-user=tony.w21@gmail.com
+#SBATCH --mail-type=all
 #SBATCH --mem=3000m
 export LAMMPS_POTENTIALS=/export/lammps_jobs/potentials
 nix develop git+ssh://git@github.com/TonyWu20/lammps_flake --command bash -c \\
