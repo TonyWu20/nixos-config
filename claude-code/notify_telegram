@@ -1,0 +1,221 @@
+#!/usr/bin/env bash
+# Sends a Telegram notification when Claude Code needs permission approval
+# or sends a notification event.
+#
+# For PreToolUse: sends an inline-keyboard message and waits for the user to
+# tap Approve or Deny before returning a hookSpecificOutput decision.
+# After Deny, waits 30 s for an optional typed reason.
+#
+# Required env vars:
+#   TELEGRAM_BOT_TOKEN  — bot token from @BotFather
+#   TELEGRAM_CHAT_ID    — target chat/user ID
+#
+# Optional env vars:
+#   TELEGRAM_APPROVAL_TIMEOUT  — seconds to wait for Approve/Deny (default: 120)
+
+set -euo pipefail
+
+[[ -z "${TELEGRAM_BOT_TOKEN:-}" || -z "${TELEGRAM_CHAT_ID:-}" ]] && exit 0
+
+APPROVAL_TIMEOUT="${TELEGRAM_APPROVAL_TIMEOUT:-120}"
+API="https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}"
+
+input=$(cat)
+event=$(printf '%s' "$input" | jq -r '.hook_event_name // ""')
+session=$(printf '%s' "$input" | jq -r '.session_id // ""')
+
+# Resolve session name from ~/.claude/sessions/<pid>.json, fall back to short ID
+session_label=$(
+	grep -rl "\"sessionId\":\"${session}\"" ~/.claude/sessions/ 2>/dev/null |
+		head -1 |
+		xargs -I{} jq -r '.name // empty' {} 2>/dev/null ||
+		true
+)
+session_label="${session_label:-${session:0:8}}"
+
+# ── helpers ───────────────────────────────────────────────────────────────────
+
+send_telegram() {
+	local text=$1
+	curl -s -X POST "${API}/sendMessage" \
+		-H "Content-Type: application/json" \
+		-d "$(jq -n --arg chat_id "$TELEGRAM_CHAT_ID" --arg text "$text" \
+			'{chat_id: $chat_id, text: $text, parse_mode: "HTML"}')" \
+		>/dev/null
+}
+
+send_keyboard() {
+	local text=$1 request_id=$2
+	curl -s -X POST "${API}/sendMessage" \
+		-H "Content-Type: application/json" \
+		-d "$(jq -n \
+			--arg chat_id "$TELEGRAM_CHAT_ID" \
+			--arg text "$text" \
+			--arg approve "approve:${request_id}" \
+			--arg deny "deny:${request_id}" \
+			'{
+              chat_id: $chat_id,
+              text: $text,
+              parse_mode: "HTML",
+              reply_markup: {
+                inline_keyboard: [[
+                  {text: "✅ Approve", callback_data: $approve},
+                  {text: "❌ Deny",    callback_data: $deny}
+                ]]
+              }
+            }')" \
+		>/dev/null
+}
+
+send_force_reply() {
+	local text=$1
+	curl -s -X POST "${API}/sendMessage" \
+		-H "Content-Type: application/json" \
+		-d "$(jq -n --arg chat_id "$TELEGRAM_CHAT_ID" --arg text "$text" \
+			'{chat_id: $chat_id, text: $text, parse_mode: "HTML",
+              reply_markup: {force_reply: true, selective: false}}')" \
+		>/dev/null
+}
+
+answer_callback() {
+	local query_id=$1
+	curl -s -X POST "${API}/answerCallbackQuery" \
+		-H "Content-Type: application/json" \
+		-d "$(jq -n --arg id "$query_id" '{callback_query_id: $id}')" \
+		>/dev/null
+}
+
+hook_output() {
+	local decision=$1 reason=${2:-}
+	jq -n --arg decision "$decision" --arg reason "$reason" \
+		'{hookSpecificOutput: {
+            hookEventName: "PreToolUse",
+            permissionDecision: $decision,
+            permissionDecisionReason: $reason
+        }}'
+}
+
+# Polls for a text message from the chat for up to 30 s.
+# Reads and updates the global $offset. Prints the reason to stdout.
+wait_for_reason() {
+	local deadline=$(($(date +%s) + 30))
+	while [[ $(date +%s) -lt $deadline ]]; do
+		local updates msg_text update_id
+		updates=$(curl -s -X POST "${API}/getUpdates" \
+			-H "Content-Type: application/json" \
+			-d "{\"offset\": $offset, \"timeout\": 3, \"allowed_updates\": [\"message\"]}")
+
+		while IFS= read -r r_update; do
+			[[ -z "$r_update" ]] && continue
+			msg_text=$(printf '%s' "$r_update" | jq -r '.message.text // ""')
+			update_id=$(printf '%s' "$r_update" | jq -r '.update_id // 0')
+			offset=$((update_id + 1))
+			if [[ -n "$msg_text" ]]; then
+				printf '%s' "$msg_text"
+				return 0
+			fi
+		done < <(printf '%s' "$updates" | jq -c '.result[]?' 2>/dev/null || true)
+	done
+	printf '%s' "Denied via Telegram"
+}
+
+# ── Notification event (async — no approval needed) ───────────────────────────
+
+if [[ "$event" == "Notification" ]]; then
+	message=$(printf '%s' "$input" | jq -r '.message // "Claude Code needs your attention"')
+	send_telegram "$(printf '<b>Claude Code Notification</b>\n\n%s' "$message")"
+	exit 0
+fi
+
+# ── PreToolUse event ──────────────────────────────────────────────────────────
+
+if [[ "$event" == "PreToolUse" ]]; then
+	tool=$(printf '%s' "$input" | jq -r '.tool_name // ""')
+
+	# Fast exit: tools auto-approved in acceptEdits mode
+	case "$tool" in
+	Read | Glob | Grep | Edit | Write | NotebookEdit | \
+		Agent | SendMessage | ToolSearch | LSP | \
+		WebFetch | WebSearch | \
+		AskUserQuestion | ExitPlanMode | EnterPlanMode | \
+		Skill | EnterWorktree | ExitWorktree | \
+		TaskCreate | TaskGet | TaskList | TaskUpdate | TaskOutput | TaskStop | \
+		TodoRead | TodoWrite | \
+		TeamCreate | TeamDelete)
+		exit 0
+		;;
+	esac
+
+	if [[ "$tool" == "Bash" ]]; then
+		cmd=$(printf '%s' "$input" | jq -r '.tool_input.command // ""')
+
+		# Fast exit: whitelisted command prefixes
+		case "$cmd" in
+		"cargo check"* | "cargo test"* | "cargo clippy"* | "cargo fix"* | \
+			"head"* | "grep"* | "git add"* | "wc"*)
+			exit 0
+			;;
+		esac
+
+		short_cmd="${cmd:0:300}"
+		[[ ${#cmd} -gt 300 ]] && short_cmd="${short_cmd}..."
+		msg_text="$(printf '<b>Claude Code: Approve?</b>\n\nTool: <code>Bash</code>\nCommand:\n<pre>%s</pre>\nSession: <code>%s</code>' \
+			"$short_cmd" "$session_label")"
+	else
+		tool_input=$(printf '%s' "$input" | jq -c '.tool_input // {}')
+		short_input="${tool_input:0:300}"
+		[[ ${#tool_input} -gt 300 ]] && short_input="${short_input}..."
+		msg_text="$(printf '<b>Claude Code: Approve?</b>\n\nTool: <code>%s</code>\nInput:\n<pre>%s</pre>\nSession: <code>%s</code>' \
+			"$tool" "$short_input" "$session_label")"
+	fi
+
+	# Unique request ID for this approval prompt
+	request_id="${session:0:8}:$(date +%s)"
+
+	# Anchor the offset so we only see callbacks that arrive after this point
+	latest=$(curl -s -X POST "${API}/getUpdates" \
+		-H "Content-Type: application/json" \
+		-d '{"limit": 1, "offset": -1}')
+	offset=$(printf '%s' "$latest" | jq -r '((.result[-1].update_id // 0) + 1)')
+
+	# Send the approval request with inline keyboard
+	send_keyboard "$msg_text" "$request_id"
+
+	# Poll for callback_query matching our request_id
+	start_time=$(date +%s)
+	while true; do
+		elapsed=$(($(date +%s) - start_time))
+		[[ $elapsed -ge $APPROVAL_TIMEOUT ]] && break
+
+		updates=$(curl -s -X POST "${API}/getUpdates" \
+			-H "Content-Type: application/json" \
+			-d "{\"offset\": $offset, \"timeout\": 3}")
+
+		while IFS= read -r update; do
+			[[ -z "$update" ]] && continue
+			cb_data=$(printf '%s' "$update" | jq -r '.callback_query.data // ""')
+			cb_query_id=$(printf '%s' "$update" | jq -r '.callback_query.id // ""')
+			update_id=$(printf '%s' "$update" | jq -r '.update_id // 0')
+			offset=$((update_id + 1))
+
+			case "$cb_data" in
+			"approve:${request_id}")
+				answer_callback "$cb_query_id"
+				hook_output "allow" "Approved via Telegram"
+				exit 0
+				;;
+			"deny:${request_id}")
+				answer_callback "$cb_query_id"
+				send_force_reply "❌ <b>Request will be denied.</b>\n\nOptionally, reply with a reason for Claude (30 s, or just wait):"
+				denial_reason=$(wait_for_reason)
+				hook_output "deny" "$denial_reason"
+				exit 0
+				;;
+			esac
+		done < <(printf '%s' "$updates" | jq -c '.result[]?' 2>/dev/null || true)
+	done
+
+	# Timeout — hand back to Claude Code's normal permission prompt
+	hook_output "ask" "Telegram approval timed out — decide locally"
+	exit 0
+fi

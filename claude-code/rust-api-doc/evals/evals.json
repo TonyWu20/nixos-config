@@ -1,0 +1,105 @@
+{
+  "skill_name": "rust-api-doc",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "I need to document workflow_core/src/executor.rs for docs.rs. Add comprehensive doc comments explaining the executor trait and factory pattern.",
+      "expected_output": "Module-level docs explaining the executor abstraction, trait docs with why/when, factory pattern explanation, examples for implementing custom executors",
+      "files": ["workflow_core/src/executor.rs"],
+      "assertions": [
+        {
+          "name": "has_module_level_docs",
+          "description": "File starts with //! module-level documentation"
+        },
+        {
+          "name": "executor_trait_documented",
+          "description": "Executor trait has /// doc comment explaining why it exists and when to implement it"
+        },
+        {
+          "name": "factory_trait_documented",
+          "description": "ExecutorFactory trait has /// doc comment explaining the factory pattern"
+        },
+        {
+          "name": "includes_implementation_example",
+          "description": "At least one example showing how to implement a custom executor"
+        },
+        {
+          "name": "cross_links_related_types",
+          "description": "Uses [TypeName] syntax to link related types (e.g., [JobHandle], [JobStatus])"
+        },
+        {
+          "name": "compiles_with_cargo_doc",
+          "description": "cargo doc runs without warnings about broken links or malformed syntax"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "can you add rustdoc to workflow_core/src/state.rs? it's the persistence layer and needs good docs before we publish",
+      "expected_output": "Module docs explaining state persistence, StateDb docs with SQLite details, TaskRecord docs with field explanations, examples showing resume workflow",
+      "files": ["workflow_core/src/state.rs"],
+      "assertions": [
+        {
+          "name": "has_module_level_docs",
+          "description": "File starts with //! explaining the persistence layer"
+        },
+        {
+          "name": "statedb_documented",
+          "description": "StateDb struct has comprehensive docs explaining SQLite usage and resume capability"
+        },
+        {
+          "name": "taskrecord_fields_documented",
+          "description": "TaskRecord fields have doc comments explaining what they store"
+        },
+        {
+          "name": "includes_resume_example",
+          "description": "Example showing how state persistence enables workflow resume"
+        },
+        {
+          "name": "documents_error_conditions",
+          "description": "Methods document when they return Err and why"
+        },
+        {
+          "name": "compiles_with_cargo_doc",
+          "description": "cargo doc runs without warnings"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "document workflow_core/src/pipeline.rs - make sure to explain the DAG construction and why we validate for cycles",
+      "expected_output": "Module docs on DAG pipeline, Pipeline struct docs explaining construction and validation, method docs with invariants, example showing task dependency setup",
+      "files": ["workflow_core/src/pipeline.rs"],
+      "assertions": [
+        {
+          "name": "has_module_level_docs",
+          "description": "File starts with //! explaining the DAG pipeline concept"
+        },
+        {
+          "name": "pipeline_struct_documented",
+          "description": "Pipeline struct has docs explaining DAG construction and validation"
+        },
+        {
+          "name": "explains_cycle_detection",
+          "description": "Documentation explicitly explains why cycle detection is important"
+        },
+        {
+          "name": "from_tasks_documented",
+          "description": "from_tasks method has docs explaining validation and error conditions"
+        },
+        {
+          "name": "includes_dependency_example",
+          "description": "Example showing how to set up task dependencies"
+        },
+        {
+          "name": "documents_invariants",
+          "description": "Mentions invariants like 'tasks must have unique IDs' or 'no cycles allowed'"
+        },
+        {
+          "name": "compiles_with_cargo_doc",
+          "description": "cargo doc runs without warnings"
+        }
+      ]
+    }
+  ]
+}

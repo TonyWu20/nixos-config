@@ -16,6 +16,7 @@ let
     "skim"
     "starship"
     "tofi"
+    "tmux"
     "yazi"
   ];
 
@@ -29,6 +30,7 @@ in
     ../fish
     ../fcitx5/home.nix
     ../rime
+    ../claude-code
   ];
   # TODO please change the username & home directory to your own
   home.sessionVariables = {
@@ -90,6 +92,9 @@ in
     unzip
     p7zip
 
+    uv
+    nodejs_25
+
     # utils
     eza # A modern replacement for ‘ls’
     fzf # A command-line fuzzy finder
@@ -147,10 +152,6 @@ in
     neomutt # email client in command line
     pandoc
 
-    (btop-cuda.overrideAttrs
-      (old: {
-        cmakeFlags = old.cmakeFlags ++ [ (lib.cmakeBool "BTOP_GPU" true) ];
-      })) # replacement of htop/nmon
     iotop # io monitoring
     iftop # network monitoring
 
@@ -174,6 +175,7 @@ in
     waybar
     wev
     dunst
+    jq
 
     # texlive later
     alacritty
@@ -182,6 +184,14 @@ in
     slurm_lammps
   ];
   programs = {
+    btop = {
+      enable = true;
+      package = (pkgs.btop-cuda.overrideAttrs
+        (old: {
+          cmakeFlags = old.cmakeFlags ++ [ (lib.cmakeBool "BTOP_GPU" true) ];
+        })) # replacement of htop/nmon
+      ;
+    };
 
     yazi = {
       enable = true;

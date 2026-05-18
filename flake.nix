@@ -6,7 +6,11 @@
     flake-parts.url = "github:hercules-ci/flake-parts";
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     nixpkgs-stable.url = "github:NixOS/nixpkgs/nixos-24.11";
-    nvimdots = { url = "github:TonyWu20/nvimdots/nix"; };
+    nvimdots = {
+      url = "github:TonyWu20/nvimdots/nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.home-manager.follows = "home-manager";
+    };
     catppuccin.url = "github:catppuccin/nix";
     fenix = { url = "github:nix-community/fenix"; inputs.nixpkgs.follows = "nixpkgs"; };
     home-manager = {
@@ -22,7 +26,10 @@
       url = "github:Mic92/sops-nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    nushell-cfg.url = "github:TonyWu20/nushell_hm_module";
+    nushell-cfg = {
+      url = "github:TonyWu20/nushell_hm_module";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     castep_job_submit.url = "git+ssh://git@github.com/TonyWu20/castep_job_submit";
   };
 
@@ -41,18 +48,54 @@
     }:
     let
       system = "x86_64-linux";
+      claude-code-rev = "v2.1.138";
+
+      claude-code-overlay = final: prev:
+        let
+          stdenv = final.stdenvNoCC;
+          baseUrl = "https://storage.googleapis.com/claude-code-dist-86c565f3-f756-42ad-8dfa-d59b1c096819/claude-code-releases";
+          platformKey = "${stdenv.hostPlatform.node.platform}-${stdenv.hostPlatform.node.arch}";
+        in
+        {
+          claude-code =
+            prev.claude-code.overrideAttrs
+              (old: rec {
+                version = final.lib.removePrefix "v" claude-code-rev;
+                src = final.fetchurl {
+                  url = "${baseUrl}/${version}/${platformKey}/claude";
+                  sha256 = "sha256-dZ0jzmJhk8ibyLNcXGyoqeM7nC5QTuFD5M0RmYh3QJc=";
+                };
+              });
+        };
       pkgs = import nixpkgs {
-        inherit system; config = {
-        allowUnfree = true;
-        cudaSupport = true;
-      };
+        stdenv.hostPlatform.system = system;
+        config = {
+          allowUnfree = true;
+          cudaSupport = true;
+          cudaCapabilities = [ "6.1" ];
+          cudaVersion = "12.9";
+        };
+        overlays = [
+          fenix.overlays.default
+          claude-code-overlay
+          (final: prev: {
+            # Target the specific CUDA set you are using
+            cudaPackages_12_9 = prev.cudaPackages_12_9.overrideScope (cfinal: cprev: {
+              # Override the cudnn attribute within that scope
+              cudnn = cprev.cudnn.overrideAttrs (oldAttrs: {
+                version = "9.8.0.87"; # Your desired version
+                src = prev.fetchurl {
+                  # You must provide the URL and hash for the specific version
+                  url = "https://developer.download.nvidia.com/compute/cudnn/redist/cudnn/linux-aarch64/cudnn-linux-aarch64-9.8.0.87_cuda12-archive.tar.xz";
+                  hash = "sha256-8D7OP/B9FxnwYhiXOoeXzsG+OHzDF7qrW7EY3JiBmec=";
+                };
+              });
+            });
+          })
+        ];
       };
       rustToolchain =
-        ({ pkgs, pkgs-stable, ... }: {
-
-          nixpkgs.overlays = [
-            fenix.overlays.default
-          ];
+        ({ pkgs, ... }: {
           environment.systemPackages = with pkgs; [
             (fenix.packages.x86_64-linux.stable.withComponents [
               "cargo"
@@ -93,8 +136,7 @@
           # The `specialArgs` parameter passes the
           # non-default nixpkgs instances to other nix modules
           specialArgs = {
-            # To use packages from nixpkgs-stable,
-            # we configure some parameters for it first
+            inherit inputs;
           };
           modules = [
             rustToolchain
@@ -103,7 +145,6 @@
             # so the old configuration file still takes effect
             ./nixos-main/configuration.nix
             ./fcitx5
-            # catppuccin/nix
             catppuccin.nixosModules.catppuccin
             # make home-manager as a module of nixos
             # so that home-manager configuration will be deployed automatically when executing `nixos-rebuild switch`
@@ -136,7 +177,9 @@
                   ];
                 };
                 backupFileExtension = "backup";
-                extraSpecialArgs = { inherit inputs; };
+                extraSpecialArgs = {
+                  inherit inputs;
+                };
               };
             }
           ];
@@ -145,6 +188,9 @@
           system = "x86_64-linux";
           # The `specialArgs` parameter passes the
           # non-default nixpkgs instances to other nix modules
+          specialArgs = {
+            inherit inputs;
+          };
           modules = [
             rustToolchain
             sops-nix.nixosModules.sops
@@ -193,6 +239,9 @@
         };
         "nixos-3" = nixpkgs.lib.nixosSystem {
           system = "x86_64-linux";
+          specialArgs = {
+            inherit inputs;
+          };
           modules = [
             rustToolchain
             sops-nix.nixosModules.sops

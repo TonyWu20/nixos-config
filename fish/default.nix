@@ -1,15 +1,13 @@
-{ config, pkgs, lib, ... }: {
+{ config, pkgs, lib, ... }:
+{
   programs.fish = {
     enable = true;
     interactiveShellInit = builtins.concatStringsSep "\n" [
       ''
         fish_vi_key_bindings
         zoxide init fish | source
-        set -gx FZF_DEFAULT_OPTS --height 80% --reverse --border --preview-window right:67%
-        set -gx FZF_DEFAULT_COMMAND 'fd --type file -HI -E .git --color=always'
         set -gx FZF_PREVIEW_FILE_CMD 'bat --style=header,numbers,grid --line-range :300 --color=always'
         set -gx FZF_PREVIEW_DIR_CMD 'eza -l --git --no-permissions --icons --no-user --level=2 -T '
-        set -gx FZF_CTRL_T_OPTS '--walker-skip .git,node_modules,target --preview \"bat -n --color=always {}\" --bind \"ctrl-/:change-preview-window(down|hidden|)\"'
         set -U FZF_TMUX 0
         set -U FZF_COMPLETE 1
         bass source /etc/set-environment
@@ -18,9 +16,22 @@
       ''
       ''
         # Automatically export sops secrets in UPPERCASE
-        ${lib.concatStringsSep "\n" (lib.mapAttrsToList (name: value: 
-          "set -gx ${lib.toUpper name} (cat ${value.path})"
-        ) config.sops.secrets.dev_vars)}
+        ${let
+          # Filter out secrets you don't want as environment variables
+          envSecrets = lib.filterAttrs
+            (name: value:
+              !(lib.hasInfix "ssh.key" name || lib.hasPrefix "munge/" name)
+            )
+            config.sops.secrets;
+        in
+        lib.concatStringsSep "\n" (lib.mapAttrsToList (name: value: 
+          let
+            # Clean name: remove prefix, swap slashes for underscores, then uppercase
+            envName = lib.toUpper name;
+          in
+          "set -gx ${envName} (cat ${value.path})"
+        ) envSecrets)
+        }
       ''
       ''
         set -gx POE_BASE_URL https://api.poe.com
@@ -32,6 +43,8 @@
         set -gx ANTHROPIC_AUTH_TOKEN $DEEPSEEK_TOKEN
         set -gx DEEPSEEK_BASE_URL https://api.deepseek.com/anthropic
         set -gx ANTHROPIC_BASE_URL $DEEPSEEK_BASE_URL
+        set -gx DISCORD_BOT_HOST 10.0.0.5:9876
+        set -gx DISCORD_BOT_REMOTE true
       ''
 
     ];
