@@ -1,4 +1,4 @@
-{ config, pkgs, inputs, lib, ... }:
+{ pkgs, inputs, lib, pi-config, ... }:
 let
   fetch_pot = inputs.castep_job_submit.packages.x86_64-linux.default;
   slurm_job = pkgs.writeShellScriptBin "slurm_job.sh" (builtins.readFile ../slurm/slurm_job.sh);
@@ -93,7 +93,7 @@ in
     p7zip
 
     uv
-    nodejs_25
+    nodejs_26
 
     # utils
     eza # A modern replacement for ‘ls’
@@ -147,6 +147,8 @@ in
     # with more details log output
     nix-output-monitor
 
+    tinyxxd
+
     # productivity
     glow # markdown previewer in terminal
     neomutt # email client in command line
@@ -176,6 +178,8 @@ in
     wev
     dunst
     jq
+    wait-for-lsp
+    fortls
 
     # texlive later
     alacritty
@@ -184,6 +188,10 @@ in
     slurm_lammps
   ];
   programs = {
+    pi.coding-agent = {
+      enable = true;
+      package = pi-config.packages.x86_64-linux.default;
+    };
     btop = {
       enable = true;
       package = (pkgs.btop-cuda.overrideAttrs

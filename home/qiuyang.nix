@@ -28,19 +28,19 @@
   };
   programs.ssh = {
     enableDefaultConfig = false;
-    matchBlocks.gh = {
+    settings.gh = {
       host = "github.com";
       user = "git";
       hostname = "github.com";
       identityFile = config.sops.secrets."tony-ssh/ssh.key".path;
     };
-    matchBlocks.master = {
+    settings.master = {
       host = "master";
       user = "tony";
       hostname = "10.0.0.2";
       identityFile = config.sops.secrets."qiuyang-ssh/ssh.key".path;
     };
-    matchBlocks.node1 = {
+    settings.node1 = {
       host = "node1";
       user = "tony";
       hostname = "10.0.0.3";

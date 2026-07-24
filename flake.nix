@@ -1,8 +1,7 @@
 {
-  description = "A simple NixOS flake";
+  description = "NixOS cluster flake — 3 machines (head node + 2 compute nodes)";
 
   inputs = {
-    # NixOS official package source, using the nixos-24.11 branch here
     flake-parts.url = "github:hercules-ci/flake-parts";
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     nixpkgs-stable.url = "github:NixOS/nixpkgs/nixos-24.11";
@@ -15,10 +14,6 @@
     fenix = { url = "github:nix-community/fenix"; inputs.nixpkgs.follows = "nixpkgs"; };
     home-manager = {
       url = "github:nix-community/home-manager/master";
-      # The `follows` keyword in inputs is used for inheritance.
-      # Here, `inputs.nixpkgs` of home-manager is kept consistent with
-      # the `inputs.nixpkgs` of the current flake,
-      # to avoid problems caused by different versions of nixpkgs.
       inputs.nixpkgs.follows = "nixpkgs";
     };
     wezterm.url = "github:wezterm/wezterm?dir=nix";
@@ -31,6 +26,18 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     castep_job_submit.url = "git+ssh://git@github.com/TonyWu20/castep_job_submit";
+    wait-for-lsp = {
+      url = "github:TonyWu20/wait-for-lsp";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+    pi = {
+      url = "github:lukasl-dev/pi.nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+    pi-config = {
+      url = "git+ssh://git@github.com/TonyWu20/pi-config";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs =
@@ -44,247 +51,154 @@
     , sops-nix
     , nushell-cfg
     , castep_job_submit
+    , wait-for-lsp
+    , pi
+    , pi-config
     , ...
     }:
     let
       system = "x86_64-linux";
-      claude-code-rev = "v2.1.138";
 
+      # ---- Flake-level overlays (used by devShells, packages, and passed to nixosSystem) ----
+      claude-code-rev = "v2.1.193";
       claude-code-overlay = final: prev:
         let
           stdenv = final.stdenvNoCC;
-          baseUrl = "https://storage.googleapis.com/claude-code-dist-86c565f3-f756-42ad-8dfa-d59b1c096819/claude-code-releases";
+          baseUrl = "https://downloads.claude.ai/claude-code-releases";
           platformKey = "${stdenv.hostPlatform.node.platform}-${stdenv.hostPlatform.node.arch}";
         in
         {
-          claude-code =
-            prev.claude-code.overrideAttrs
-              (old: rec {
-                version = final.lib.removePrefix "v" claude-code-rev;
-                src = final.fetchurl {
-                  url = "${baseUrl}/${version}/${platformKey}/claude";
-                  sha256 = "sha256-dZ0jzmJhk8ibyLNcXGyoqeM7nC5QTuFD5M0RmYh3QJc=";
-                };
-              });
+          claude-code = prev.claude-code.overrideAttrs (old: rec {
+            version = final.lib.removePrefix "v" claude-code-rev;
+            src = final.fetchurl {
+              url = "${baseUrl}/${version}/${platformKey}/claude";
+              sha256 = "sha256-yfBNkp8YvZoQHziX8n3k4eDxXr6EANSq8CmD1z3Wax0=";
+            };
+          });
         };
+
+      overlays = [
+        fenix.overlays.default
+        claude-code-overlay
+        wait-for-lsp.overlays.default
+      ];
+
       pkgs = import nixpkgs {
-        stdenv.hostPlatform.system = system;
-        config = {
-          allowUnfree = true;
-          cudaSupport = true;
-          cudaCapabilities = [ "6.1" ];
-          cudaVersion = "12.9";
-        };
-        overlays = [
-          fenix.overlays.default
-          claude-code-overlay
-          (final: prev: {
-            # Target the specific CUDA set you are using
-            cudaPackages_12_9 = prev.cudaPackages_12_9.overrideScope (cfinal: cprev: {
-              # Override the cudnn attribute within that scope
-              cudnn = cprev.cudnn.overrideAttrs (oldAttrs: {
-                version = "9.8.0.87"; # Your desired version
-                src = prev.fetchurl {
-                  # You must provide the URL and hash for the specific version
-                  url = "https://developer.download.nvidia.com/compute/cudnn/redist/cudnn/linux-aarch64/cudnn-linux-aarch64-9.8.0.87_cuda12-archive.tar.xz";
-                  hash = "sha256-8D7OP/B9FxnwYhiXOoeXzsG+OHzDF7qrW7EY3JiBmec=";
-                };
-              });
-            });
-          })
+        system = system;
+        config.allowUnfree = true;
+        inherit overlays;
+      };
+
+      # ---- Rust toolchain module (shared by all machines) ----
+      rustToolchain = { pkgs, ... }: {
+        environment.systemPackages = with pkgs; [
+          (fenix.packages.x86_64-linux.stable.withComponents [
+            "cargo"
+            "clippy"
+            "rust-src"
+            "rustc"
+            "rustfmt"
+            "rust-analyzer"
+          ])
+          gcc
         ];
       };
-      rustToolchain =
-        ({ pkgs, ... }: {
-          environment.systemPackages = with pkgs; [
-            (fenix.packages.x86_64-linux.stable.withComponents [
-              "cargo"
-              "clippy"
-              "rust-src"
-              "rustc"
-              "rustfmt"
-              "rust-analyzer"
-            ])
-            gcc
-          ];
-        })
-      ;
+
+      # ---- Shared home-manager modules (used by all home-manager users) ----
+      homeSharedModules = [
+        nvimdots.homeManagerModules.default
+        catppuccin.homeModules.catppuccin
+        nushell-cfg.homeManagerModules.default
+        sops-nix.homeManagerModules.sops
+        pi.homeModules.default
+        (pi-config.piModules.homeManager { system = "x86_64-linux"; })
+      ];
+
+      # ---- Machine factory: builds a NixOS system from roles + machine-specific config ----
+      mkNixosSystem = { configPath, homeImports, hostRoles ? [ ], enableFcitx5 ? true }:
+        nixpkgs.lib.nixosSystem {
+          system = "x86_64-linux";
+          specialArgs = { inherit inputs; };
+          modules =
+            # Shared boilerplate — identical for every machine
+            [
+              rustToolchain
+              sops-nix.nixosModules.sops
+              ({ pkgs, ... }: { nixpkgs = { inherit overlays; }; })
+              configPath
+              catppuccin.nixosModules.catppuccin
+              home-manager.nixosModules.home-manager
+              {
+                home-manager = {
+                  useGlobalPkgs = true;
+                  useUserPackages = true;
+                  sharedModules = homeSharedModules;
+                  users = homeImports;
+                  backupFileExtension = "backup";
+                  extraSpecialArgs = { inherit inputs pi-config; };
+                };
+              }
+            ]
+            # Optional fcitx5 IME (not needed on all machines)
+            ++ nixpkgs.lib.optional enableFcitx5 ./fcitx5
+            # Role modules — visible composition of machine capabilities
+            ++ hostRoles;
+        };
     in
     {
       packages.x86_64-linux.default = fenix.packages.x86_64-linux.stable.toolchain;
+
       devShells.${system} = {
         rs_font = pkgs.mkShell {
-          packages = with pkgs; [
-            stdenv
-            fish
-          ];
-          buildInputs = with pkgs; [
-            fontconfig
-          ];
-          nativeBuildInputs = with pkgs; [
-            pkg-config
-          ];
+          packages = with pkgs; [ stdenv fish ];
+          buildInputs = with pkgs; [ fontconfig ];
+          nativeBuildInputs = with pkgs; [ pkg-config ];
           shellHook = ''
             exec fish
           '';
         };
       };
-      nixosConfigurations = {
-        # Please replace my-nixos with your hostname
-        nixos = nixpkgs.lib.nixosSystem {
-          system = "x86_64-linux";
-          # The `specialArgs` parameter passes the
-          # non-default nixpkgs instances to other nix modules
-          specialArgs = {
-            inherit inputs;
-          };
-          modules = [
-            rustToolchain
-            sops-nix.nixosModules.sops
-            # Import the previous configuration.nix we used,
-            # so the old configuration file still takes effect
-            ./nixos-main/configuration.nix
-            ./fcitx5
-            catppuccin.nixosModules.catppuccin
-            # make home-manager as a module of nixos
-            # so that home-manager configuration will be deployed automatically when executing `nixos-rebuild switch`
-            home-manager.nixosModules.home-manager
-            {
-              home-manager = {
-                useGlobalPkgs = true;
-                useUserPackages = true;
-                sharedModules = [
-                  nvimdots.homeManagerModules.default
-                  catppuccin.homeModules.catppuccin
-                  nushell-cfg.homeManagerModules.default
-                  inputs.sops-nix.homeManagerModules.sops
-                ];
-                users.tony = {
-                  imports = [
-                    ./home/tony.nix
-                    ./nixos-main/home_ssh.nix
-                    ./nixos-main/home_wayland.nix
-                  ];
-                };
-                users.jerry = {
-                  imports = [
-                    ./home/jerry.nix
-                  ];
-                };
-                users.qiuyang = {
-                  imports = [
-                    ./home/qiuyang.nix
-                  ];
-                };
-                backupFileExtension = "backup";
-                extraSpecialArgs = {
-                  inherit inputs;
-                };
-              };
-            }
-          ];
-        };
-        "nixos-2" = nixpkgs.lib.nixosSystem {
-          system = "x86_64-linux";
-          # The `specialArgs` parameter passes the
-          # non-default nixpkgs instances to other nix modules
-          specialArgs = {
-            inherit inputs;
-          };
-          modules = [
-            rustToolchain
-            sops-nix.nixosModules.sops
-            # Import the previous configuration.nix we used,
-            # so the old configuration file still takes effect
-            ./nixos-node1/configuration.nix
-            ./fcitx5
-            catppuccin.nixosModules.catppuccin
-            # make home-manager as a module of nixos
-            # so that home-manager configuration will be deployed automatically when executing `nixos-rebuild switch`
-            home-manager.nixosModules.home-manager
-            {
-              home-manager = {
-                useGlobalPkgs = true;
-                useUserPackages = true;
-                sharedModules = [
-                  nvimdots.homeManagerModules.default
-                  catppuccin.homeModules.catppuccin
-                  nushell-cfg.homeManagerModules.default
-                  inputs.sops-nix.homeManagerModules.sops
-                ];
-                users.tony = {
-                  imports = [
-                    ./home/tony-node.nix
-                    ./nixos-node1/home_ssh.nix
-                    ./nixos-node1/home_wayland.nix
-                  ];
-                };
-                users.jerry = {
-                  imports = [
-                    ./home/jerry.nix
-                    ./nixos-node1/home_ssh.nix
-                    ./nixos-node1/home_wayland.nix
-                  ];
-                };
-                users.qiuyang = {
-                  imports = [
-                    ./home/qiuyang.nix
-                  ];
-                };
-                backupFileExtension = "backup";
-                extraSpecialArgs = { inherit inputs; };
-              };
-            }
-          ];
-        };
-        "nixos-3" = nixpkgs.lib.nixosSystem {
-          system = "x86_64-linux";
-          specialArgs = {
-            inherit inputs;
-          };
-          modules = [
-            rustToolchain
-            sops-nix.nixosModules.sops
-            # Import the previous configuration.nix we used,
-            # so the old configuration file still takes effect
-            ./nixos-node2/configuration.nix
-            ./fcitx5
-            # catppuccin/nix
-            catppuccin.nixosModules.catppuccin
-            # make home-manager as a module of nixos
-            # so that home-manager configuration will be deployed automatically when executing `nixos-rebuild switch`
-            home-manager.nixosModules.home-manager
-            {
-              home-manager = {
-                useGlobalPkgs = true;
-                useUserPackages = true;
-                sharedModules = [
-                  nvimdots.homeManagerModules.default
-                  catppuccin.homeModules.catppuccin
-                  nushell-cfg.homeManagerModules.default
-                  inputs.sops-nix.homeManagerModules.sops
-                ];
-                users.tony = {
-                  imports = [
-                    ./home/tony-node.nix
-                  ];
-                };
-                users.jerry = {
-                  imports = [
-                    ./home/jerry.nix
-                  ];
-                };
-                users.qiuyang = {
-                  imports = [
-                    ./home/qiuyang.nix
-                  ];
-                };
-                backupFileExtension = "backup";
-                extraSpecialArgs = { inherit inputs; };
-              };
-            }
-          ];
 
+      # ---- Machine definitions: roles make intent visible ----
+      nixosConfigurations = {
+        # Head node: NFS server, SLURM controller, cache, NAT, desktop
+        nixos = mkNixosSystem {
+          configPath = ./nixos-main/configuration.nix;
+          hostRoles = [
+            ./roles/head-node.nix
+          ];
+          homeImports = {
+            tony.imports = [ ./home/tony.nix ./nixos-main/home_ssh.nix ./nixos-main/home_wayland.nix ];
+            jerry.imports = [ ./home/jerry.nix ];
+            qiuyang.imports = [ ./home/qiuyang.nix ];
+          };
+        };
+
+        # Compute node with DNS + SOCKS proxy
+        "nixos-2" = mkNixosSystem {
+          configPath = ./nixos-node1/configuration.nix;
+          hostRoles = [
+            ./roles/compute-node.nix
+          ];
+          homeImports = {
+            tony.imports = [ ./home/tony-node.nix ./nixos-node1/home_ssh.nix ./nixos-node1/home_wayland.nix ];
+            jerry.imports = [ ./home/jerry.nix ./nixos-node1/home_ssh.nix ./nixos-node1/home_wayland.nix ];
+            qiuyang.imports = [ ./home/qiuyang.nix ];
+          };
+        };
+
+        # Bare compute node (minimal)
+        "nixos-3" = mkNixosSystem {
+          configPath = ./nixos-node2/configuration.nix;
+          enableFcitx5 = false;
+          hostRoles = [
+            ./roles/compute-node.nix
+          ];
+          homeImports = {
+            tony.imports = [ ./home/tony-node.nix ];
+            jerry.imports = [ ./home/jerry.nix ];
+            qiuyang.imports = [ ./home/qiuyang.nix ];
+          };
         };
       };
     };

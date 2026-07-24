@@ -1,67 +1,21 @@
-{ config, ... }: {
-  # basic configuration of git, please change to your own
+{ config, ... }:
+{
   imports = [
-    ./default.nix
+    ./tony-base.nix
   ];
-  home.username = "tony";
-  home.homeDirectory = "/home/tony";
-  home.sessionPath = [
-    "$HOME/.cargo/bin"
-  ];
-  home.sessionVariables.SOPS_AGE_KEY_FILE = "/home/tony/nixos-config/sops/age/keys.txt";
 
-  programs.delta = {
-    enable = true;
-    enableGitIntegration = true;
-  };
-
-  programs.git = {
-    enable = true;
-    lfs.enable = true;
-    settings = {
-      user = {
-        name = "TonyWu20";
-        email = "tony.w21@gmail.com";
-      };
-      core = {
-        quotepath = false;
-      };
-      extraConfig = {
-        safe.directory = [
-          "/home/tony/Downloads/gauss_shell"
-        ];
-      };
-    };
-  };
-
-  programs.ssh = {
-    enableDefaultConfig = false;
-    matchBlocks.gh = {
-      host = "github.com";
-      user = "git";
-      hostname = "github.com";
-      identityFile = config.sops.secrets."tony-ssh/ssh.key".path;
-    };
-    matchBlocks.master = {
+  programs.ssh.settings = {
+    master = {
       host = "master";
       user = "tony";
       hostname = "10.0.0.2";
       identityFile = config.sops.secrets."tony-ssh/ssh.key".path;
     };
-    matchBlocks.node1 = {
+    node1 = {
       host = "node1";
       user = "tony";
       hostname = "10.0.0.3";
       identityFile = config.sops.secrets."tony-ssh/ssh.key".path;
-    };
-  };
-  sops = {
-    defaultSopsFile = ../sops/secrets/my_secrets.yaml;
-    age.sshKeyPaths = [ "${config.home.homeDirectory}/.ssh/id_ed25519" ];
-    age.generateKey = false;
-    secrets."tony-ssh/ssh.key" = {
-      mode = "0400";
-      # path = "${config.home.homeDirectory}/.ssh/id_ed25519";
     };
   };
 }

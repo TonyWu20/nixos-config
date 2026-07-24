@@ -1,31 +1,19 @@
-# Edit this configuration file to define what should be installed on
-# your system. Help is available in the configuration.nix(5) man page, on
-# https://search.nixos.org/options and in the NixOS manual (`nixos-help`).
-
-{ lib, ... }:
-{
-  imports =
-    [
-      # Include the results of the hardware scan.
-      ../configuration-common.nix
-      ./hardware-configuration.nix
-      ./network_nfs.nix
-      ../nfs/node.nix
-    ];
-  nix = {
-    settings = {
-      substituters = lib.mkBefore [
-        "http://10.0.0.2"
-      ];
-      trusted-public-keys = [
-        "10.0.0.2:iIE9Q90BgaU/izk7x2F7+j/C5B2guzO0JULT2q2yylI="
-      ];
-    };
-  };
-  networking.hostName = "nixos-3"; # Define your hostname.
-  networking.domain = "nixCluster"; # Define your domain.
-  services.slurm.extraConfigPaths = [
-    ../slurm/nixos-node2
+{ ... }: {
+  imports = [
+    ../modules/core.nix
+    ./hardware-configuration.nix
   ];
-}
 
+  networking = {
+    hostName = "nixos-3";
+    domain = "nixCluster";
+    interfaces.enp6s0.ipv4.addresses = [{
+      address = "10.0.0.4";
+      prefixLength = 24;
+    }];
+  };
+  services.zerotierone.joinNetworks = [ "b15644912e4d3047" ];
+  services.slurm.extraConfigPaths = [ ../slurm/nixos-node2 ];
+
+  system.stateVersion = "24.11";
+}

@@ -33,13 +33,13 @@
   };
   programs.ssh = {
     enableDefaultConfig = false;
-    matchBlocks.gh = {
+    settings.gh = {
       host = "github.com";
       user = "git";
       hostname = "github.com";
       identityFile = config.sops.secrets."jerry-ssh/ssh.key".path;
     };
-    matchBlocks.nixos = {
+    settings.nixos = {
       host = "nixos";
       user = "tony";
       hostname = "10.0.0.2";
