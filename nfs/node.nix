@@ -32,5 +32,10 @@
       device = "10.0.0.2:/lammps_jobs";
       fsType = "nfs";
     };
+    "/export/castep-rust-eigensolve" = {
+      device = "10.0.0.2:/castep-rust-eigensolve";
+      fsType = "nfs";
+      options = [ "rw" "noauto" "x-systemd.automount" ];
+    };
   };
 }

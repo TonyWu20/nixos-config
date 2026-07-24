@@ -13,6 +13,7 @@
         bass source /etc/set-environment
         source ${pkgs.fish}/share/fish/completions/rsync.fish
         set -ga PATH ~/.cargo/bin/
+        set -ga PATH ~/.local/bin/
       ''
       ''
         # Automatically export sops secrets in UPPERCASE

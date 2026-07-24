@@ -13,6 +13,9 @@
 
         source "${pkgs.tmuxPlugins.catppuccin}/share/tmux-plugins/catppuccin/utils/status_module.conf"
       ''
+      ''
+        run-shell 'if [ "$(tmux show-env -g TMUX_CPU_INITIALIZED 2>/dev/null)" = "" ]; then tmux set-env -g TMUX_CPU_INITIALIZED 1; ${pkgs.tmuxPlugins.cpu}/share/tmux-plugins/cpu/cpu.tmux; fi'
+      ''
       (builtins.readFile ./tmux_catppuccin.conf)
     ];
     terminal = "xterm-256color";

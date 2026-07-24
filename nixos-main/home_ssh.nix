@@ -1,6 +1,6 @@
 { config, ... }: {
   programs.ssh = {
-    matchBlocks = {
+    settings = {
       mac = {
         host = "mac";
         user = "tonywu";
