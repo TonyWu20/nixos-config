@@ -35,7 +35,8 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     pi-config = {
-      url = "git+ssh://git@github.com/TonyWu20/pi-config";
+      #url = "git+ssh://git@github.com/TonyWu20/pi-config";
+      url = "git+file:///home/tony/programming/pi-config";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };
@@ -81,6 +82,15 @@
         fenix.overlays.default
         claude-code-overlay
         wait-for-lsp.overlays.default
+        #(final: prev: {
+        #  python3 = final.python313;
+        #  python3Packages = final.python313Packages;
+        #})
+        (final: prev: {
+          wrapNeovimUnstable = prev.wrapNeovimUnstable.override {
+            python3 = final.python313;
+          };
+        })
       ];
 
       pkgs = import nixpkgs {
@@ -178,7 +188,7 @@
         "nixos-2" = mkNixosSystem {
           configPath = ./nixos-node1/configuration.nix;
           hostRoles = [
-            ./roles/compute-node.nix
+            ./roles/compute-node-plus.nix
           ];
           homeImports = {
             tony.imports = [ ./home/tony-node.nix ./nixos-node1/home_ssh.nix ./nixos-node1/home_wayland.nix ];

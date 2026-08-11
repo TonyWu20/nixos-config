@@ -57,6 +57,9 @@
     };
   };
 
+  # Dev ports (dashboard, dev servers, Webmin)
+  networking.firewall.allowedTCPPorts = [ 8000 8080 10000 ];
+
   # Desktop / Hyprland
   programs.hyprland.enable = true;
   programs.firefox.enable = true;

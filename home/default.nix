@@ -107,7 +107,7 @@ in
     pkg-config
 
     tree-sitter
-    (python3.withPackages
+    (python313.withPackages
       (ps: with ps;[ ps.pynvim huggingface-hub ]))
 
     # fonts
@@ -252,7 +252,7 @@ in
         "--preview-window right:67%"
       ];
       defaultCommand = "fd --type file -HI -E .git --color=always";
-      fileWidgetOptions = [
+      fileWidget.options = [
         "--preview 'bat -n --color=always {}'"
         "--bind 'ctrl-/:change-preview-window(down|hidden|)'"
         "--walker-skip .git,node_modules,target"

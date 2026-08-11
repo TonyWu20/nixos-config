@@ -353,11 +353,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1781365335,
-        "narHash": "sha256-zqDBhXMzfbdlO7F2bGHe7MOtB3xngd/+4ieMHDC+ZXo=",
+        "lastModified": 1786356609,
+        "narHash": "sha256-ou8fYz5w9yhXC8YbvvExybFIa19MyW5G/8dEPqa90hM=",
         "owner": "nix-community",
         "repo": "home-manager",
-        "rev": "5b6f5733726a1b2ccafb5dec6ac4ca7299fad66c",
+        "rev": "c30c7955cec30d664a9baced6bc0112e263d4647",
         "type": "github"
       },
       "original": {
@@ -552,11 +552,11 @@
     },
     "nixpkgs_3": {
       "locked": {
-        "lastModified": 1781074563,
-        "narHash": "sha256-md8WlXOlfnIeHeOScMTTHFyf2d6iaTwPl2apR5EQ3P4=",
+        "lastModified": 1786247143,
+        "narHash": "sha256-8S3Kcxs7D4UtxJxSJZz0m14CGhuW0MxfrIwJxeGWGnQ=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "9ae611a455b90cf061d8f332b977e387bda8e1ca",
+        "rev": "279b4a8275f032c566576b3f181fa0f27197f588",
         "type": "github"
       },
       "original": {
@@ -623,11 +623,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1781172512,
-        "narHash": "sha256-Pz3v19e/b0djMv+r9yuTx9L4YHWjp06n6qkT+DbO9bM=",
+        "lastModified": 1784782879,
+        "narHash": "sha256-S7soeFTNIivkFEvCbPTxp0mKsohhLz2f0vJ6r7bqx74=",
         "owner": "TonyWu20",
         "repo": "nushell_hm_module",
-        "rev": "134f8e4846dd2175aa868aa5f740ebad7d7854b6",
+        "rev": "65397d3fe7fd3a941b862315ee171ab4e3610db8",
         "type": "github"
       },
       "original": {
@@ -693,17 +693,17 @@
         "pi-flake": "pi-flake"
       },
       "locked": {
-        "lastModified": 1784858454,
-        "narHash": "sha256-151tIb1w7fgDt71V7zX64woSBT9MAzgzTCE1cyUXFl8=",
+        "lastModified": 1786448630,
+        "narHash": "sha256-1zs/3GcPEl/htRTkyq7IifLuTTBc6JgCSCvUk0kcc9I=",
         "ref": "refs/heads/main",
-        "rev": "b399987bc6650d772a6f0f8039f1da1e70106b72",
-        "revCount": 18,
+        "rev": "b158f494a82aec9d46a347f972f56412550831cf",
+        "revCount": 103,
         "type": "git",
-        "url": "ssh://git@github.com/TonyWu20/pi-config"
+        "url": "file:///home/tony/programming/pi-config"
       },
       "original": {
         "type": "git",
-        "url": "ssh://git@github.com/TonyWu20/pi-config"
+        "url": "file:///home/tony/programming/pi-config"
       }
     },
     "pi-flake": {

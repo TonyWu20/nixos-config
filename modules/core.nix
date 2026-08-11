@@ -151,10 +151,11 @@
     };
   };
 
-  # ---- Firewall (cluster base) ----
+  # ---- Firewall (cluster base: SSH + NFS) ----
   networking.firewall = {
     enable = true;
     allowedTCPPorts = [ 111 2049 4000 4001 4002 20048 22 ];
+    allowedTCPPortRanges = [{ from = 3000; to = 4000; }];
     allowedUDPPorts = [ 111 2049 4000 4001 4002 20048 22 ];
     allowedUDPPortRanges = [{ from = 60000; to = 65535; }];
   };
