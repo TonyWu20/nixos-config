@@ -10,11 +10,5 @@
       setBuildEnv = true;
       withBuildTools = true;
     };
-    extraPython3Packages =
-      (ps: with ps; [
-        docformatter
-        isort
-        pynvim
-      ]);
   };
 }
