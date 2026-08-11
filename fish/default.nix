@@ -11,7 +11,11 @@
         set -U FZF_TMUX 0
         set -U FZF_COMPLETE 1
         bass source /etc/set-environment
-        source ${pkgs.fish}/share/fish/completions/rsync.fish
+        source ${
+          pkgs.runCommand "rsync-fish-completion" { } ''
+            ${pkgs.fish}/bin/fish --no-config -c 'status get-file completions/rsync.fish' > $out
+          ''
+        }
         set -ga PATH ~/.cargo/bin/
         set -ga PATH ~/.local/bin/
       ''
