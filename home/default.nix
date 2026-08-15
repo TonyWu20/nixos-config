@@ -250,6 +250,7 @@ in
         "--reverse"
         "--border"
         "--preview-window right:67%"
+        "--ansi"
       ];
       defaultCommand = "fd --type file -HI -E .git --color=always";
       fileWidget.options = [
