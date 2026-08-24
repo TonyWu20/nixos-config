@@ -45,6 +45,13 @@
         identityFile = config.sops.secrets."tony-ssh/ssh.key".path;
         forwardAgent = true;
       };
+      node3 = {
+        host = "nixos-pro5000";
+        user = "tony";
+        hostname = "10.0.0.6";
+        identityFile = config.sops.secrets."tony-ssh/ssh.key".path;
+        forwardAgent = true;
+      };
       m4 = {
         host = "macm4";
         user = "tony";

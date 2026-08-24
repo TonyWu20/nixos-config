@@ -41,6 +41,16 @@
     '';
   };
 
+  # NAT gateway: give the wired 10.0.0.0/24 cluster internet access via this
+  # node's wifi uplink. enp6s0 keeps its static 10.0.0.3/24 address — no
+  # ethernet "sharing" reconfiguration, so the LAN addressing is untouched.
+  boot.kernel.sysctl."net.ipv4.ip_forward" = 1;
+  networking.nat = {
+    enable = true;
+    externalInterface = "wlp0s20u4i2";
+    internalInterfaces = [ "enp6s0" ];
+  };
+
   networking.firewall = {
     allowedTCPPorts = [ 53 1080 ];
     allowedUDPPorts = [ 53 1080 ];

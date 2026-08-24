@@ -62,7 +62,7 @@
 
   # Desktop / Hyprland
   programs.hyprland.enable = true;
-  programs.firefox.enable = true;
+  #  programs.firefox.enable = true;
   services.greetd = {
     enable = true;
     settings = {

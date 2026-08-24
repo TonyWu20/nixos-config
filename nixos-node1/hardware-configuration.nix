@@ -11,9 +11,25 @@
 
   boot.initrd.availableKernelModules = [ "xhci_pci" "ehci_pci" "nvme" "usb_storage" "usbhid" "sd_mod" ];
   boot.initrd.kernelModules = [ "nvidia" "i915" "nvidia_modeset" "nvidia_uvm" "nvidia_drm" ];
-  boot.kernelModules = [ "kvm-intel" ];
+  boot.kernelModules = [ "kvm-intel" "tcp_bbr" ];
   boot.extraModulePackages = [ ];
 
+  boot.kernel.sysctl = {
+    # Increase the maximum memory limits for TCP read/write buffers
+    "net.core.rmem_max" = 134217728;
+    "net.core.wmem_max" = 134217728;
+
+    # Set optimal minimum, default, and maximum buffer sizes
+    "net.ipv4.tcp_rmem" = "4096 87380 134217728";
+    "net.ipv4.tcp_wmem" = "4096 65536 134217728";
+
+    # Prevent bottlenecks in the device input queue under heavy network workloads
+    "net.core.netdev_max_backlog" = 250000;
+
+    # Enable the high-performance BBR congestion control algorithm (requires the tcp_bbr module)
+    "net.core.default_qdisc" = "fq";
+    "net.ipv4.tcp_congestion_control" = "bbr";
+  };
   fileSystems."/" =
     {
       device = "/dev/disk/by-label/NIXROOT";

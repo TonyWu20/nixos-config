@@ -1,5 +1,5 @@
 {
-  description = "NixOS cluster flake — 3 machines (head node + 2 compute nodes)";
+  description = "NixOS cluster flake — 4 machines (head node + 3 compute nodes)";
 
   inputs = {
     flake-parts.url = "github:hercules-ci/flake-parts";
@@ -208,6 +208,18 @@
             tony.imports = [ ./home/tony-node.nix ];
             jerry.imports = [ ./home/jerry.nix ];
             qiuyang.imports = [ ./home/qiuyang.nix ];
+          };
+        };
+
+        # RTX PRO 5000 Blackwell compute node (single user)
+        "nixos-pro5000" = mkNixosSystem {
+          configPath = ./nixos-pro5000/configuration.nix;
+          enableFcitx5 = false;
+          hostRoles = [
+            ./roles/compute-node-pro5000.nix
+          ];
+          homeImports = {
+            tony.imports = [ ./home/tony-node.nix ];
           };
         };
       };

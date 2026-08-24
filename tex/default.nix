@@ -1,18 +1,16 @@
-{ config, pkgs, ... }:
+{ pkgs, ... }:
 let
-  tex = (pkgs.texlive.combine {
-    inherit (pkgs.texlive) scheme-small
-      ctex
-      cleveref
-      enumitem
-      comment
-      mhchem
-      ;
-
-  });
+  tex = pkgs.texliveSmall.withPackages (ps: with ps; [
+    scheme-small
+    ctex
+    cleveref
+    enumitem
+    comment
+    mhchem
+  ]);
 in
 {
-  home. packages = with pkgs; [
+  home. packages = [
     tex
   ];
 }
