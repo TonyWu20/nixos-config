@@ -37,28 +37,30 @@ Requires `enable-metrics: true` in the SGLang server config.
 
 ## Costs file
 
-The file has its own schema. No harness or provider config: 
+The tool reads a JSON file with its own schema. It has no link to
+any harness or provider config. Two forms of `models` work: 
 
 ```
 {
-  "models": {
-    "<model-id or name>": { "input": 0.44, "output": 1.32, "cacheRead": 0.014 }
-  },
+  "models": [
+    { "id": "<model id>", "input": 0.44, "output": 1.32, "cacheRead": 0.014 }
+  ],
   "default": { "input": 3.0, "output": 15.0, "cacheRead": 0.3 }
 }
 ```
 
-Prices are USD per 1M tokens. `cacheRead` is optional. A missing
-`cacheRead` bills cached tokens at the input price. `default` applies
-to models the `models` map does not match.
+or `"models": { "<id>": { "input": ..., ... } }` as a map. Prices
+are USD per 1M tokens. `cacheRead` is optional. A missing `cacheRead`
+bills cached tokens at the input price. `default` applies to models
+the `models` list does not match.
 
-Matching: the label of the model SGLang reports (`model_name` label,
-trailing `/` removed) is compared against each entry. The match is a
-prefix at a `-` boundary. The longest overlap wins.
+The Nix module writes this file from the `costs` option. If you keep
+the file outside Nix, point `costsFile` at it and keep the `costs`
+option only for the fallback prices.
 
-The default costs file is `~/.local/share/sglang-metrics/costs.json`.
-The Nix module option `services.sglangMetrics.costsFile` overrides
-the path.
+Matching: the `model_name` label SGLang reports (trailing `/`
+removed) is compared against each entry `id` (and `name` if present).
+The match is a prefix at a `-` boundary. The longest overlap wins.
 
 ## Nix options
 
@@ -69,12 +71,23 @@ services.sglangMetrics = {
   enable = true;
   endpoints = [ "127.0.0.1:30000" "127.0.0.1:31000" ];
   intervalMins = 5;
-  costs.inputPerMioUSD = 3.0;
-  costs.outputPerMioUSD = 15.0;
-  # costsFile = "/path/to/costs.json";  # default:
-  # ~/.local/share/sglang-metrics/costs.json
+  # Per-model prices, USD per 1M tokens. The module writes this table
+  # to /etc/sglang-metrics/costs.json at activation.
+  costs = {
+    models = [
+      { id = "Qwen3.8-27B-NVFP4-RTX5090-DSPARK"; input = 0.44; output = 1.32; cacheRead = 0.014; }
+    ];
+    default = { input = 3.0; output = 15.0; cacheRead = 0.3; };
+  };
 };
 ```
+
+`costsFile` points the report at the costs table. Default is the
+file the module writes from `costs`.
+
+`costs.default` prices models that no `costs.models` entry matches.
+It also feeds the `--input-price`/`--output-price` fallback of the
+report wrapper.
 
 ## Data format
 
@@ -116,6 +129,6 @@ cost = uncached_prompt/1e6 * input
 prefill can count some tokens in both counters. The per-model costs
 sum to the "est. cloud API cost" line.
 
-It is a rough guide. Set the costs file to the real prices of the
+It is a rough guide. Set the `costs` option to the real prices of the
 cloud API you replace. Tokens processed while the timer was not
 running (at most one interval) are not counted.

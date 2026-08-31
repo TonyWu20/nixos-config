@@ -16,12 +16,28 @@ let
   bin = import ./package.nix { inherit pkgs; };
 
   # A second wrapper with the configured prices and db path baked in.
+  fallbackIn = cfg.costs.default.input or 3.0;
+  fallbackOut = cfg.costs.default.output or 15.0;
+
+  # Every entry must have input and output prices.
+  costsOk =
+    let costs = cfg.costs;
+    in lib.all (e:
+      lib.isAttrs e
+      && (builtins.hasAttr "input" e)
+      && (builtins.hasAttr "output" e)
+    ) (costs.models or [])
+      && (!(costs ? default)
+      || (lib.isAttrs costs.default
+      && (builtins.hasAttr "input" costs.default)
+      && (builtins.hasAttr "output" costs.default)));
+
   reportBin = pkgs.writeShellScriptBin "sglang-usage-report" ''
     exec ${bin}/bin/sglang-usage report \
       --db ${cfg.dbPath} \
       --costs-file ${cfg.costsFile} \
-      --input-price ${lib.toString (cfg.costs.inputPerMioUSD or 3.0)} \
-      --output-price ${lib.toString (cfg.costs.outputPerMioUSD or 15.0)} \
+      --input-price ${lib.toString fallbackIn} \
+      --output-price ${lib.toString fallbackOut} \
       "$@"
   '';
 
@@ -72,32 +88,53 @@ in
 
     costsFile = lib.mkOption {
       type = lib.types.str;
-      default = "/home/tony/.local/share/sglang-metrics/costs.json";
+      default = "/etc/sglang-metrics/costs.json";
       description = ''
-        Path to the JSON costs file the report uses for per-model prices.
-        Schema: `{ "models": { <id>: { input, output, cacheRead? } },
-        "default": { input, output, cacheRead? } }` in USD per 1M tokens.
-        If the file is missing, the report falls back to the `costs`
-        option prices.
+        Path to the JSON costs file the report uses for per-model
+        prices. The module writes this file from the `costs` option
+        at activation time. Set it to another path to use a file
+        outside of Nix. If the file is missing at report time, the
+        report falls back to the `costs` default prices.
       '';
     };
 
     costs = lib.mkOption {
-      type = lib.types.attrsOf (lib.types.float);
+      type = lib.types.attrs;
       default = {
-        inputPerMioUSD = 3.0;
-        outputPerMioUSD = 15.0;
+        models = [
+          { id = "Qwen3.8-Flash-Next-NVFP4"; input = 0.44; output = 1.32; cacheRead = 0.014; }
+          { id = "Qwen3.8-27B-NVFP4"; input = 0.44; output = 1.32; cacheRead = 0.014; }
+          { id = "Qwen3.8-27B-NVFP4-RTX5090-DSPARK"; input = 0.44; output = 1.32; cacheRead = 0.014; }
+          { id = "Qwen3.8-27B-DAU-IQ4"; input = 1.74; output = 3.48; cacheRead = 0.145; }
+          { id = "Qwen3.8-27B-DAU-Q8_0"; input = 1.74; output = 3.48; cacheRead = 0.145; }
+          { id = "Qwen3.8-27B-GGUF-DFlash2-UD-Q6_K_XL"; input = 1.74; output = 3.48; cacheRead = 0.145; }
+          { id = "Nail-Qwen3.6-35B-A3B"; input = 1.74; output = 3.48; cacheRead = 0.145; }
+          { id = "deepseek-v4-pro"; input = 1.74; output = 3.48; cacheRead = 0.145; }
+          { id = "deepseek-v4-flash"; input = 0.14; output = 0.28; cacheRead = 0.028; }
+        ];
+        default = { input = 3.0; output = 15.0; cacheRead = 0.3; };
       };
       description = ''
-        Prices for the "estimated savings" line of the report, in USD
-        per million tokens. Set `inputPerMioUSD` and `outputPerMioUSD`
-        to the prices of the cloud API you replace with local serving.
+        Per-model prices in USD per 1M tokens. `models` is a list of
+        `{ id, input, output, cacheRead? }`; `default` prices the
+        models the list does not match. The module writes this table
+        to the file named by `costsFile` at activation.
       '';
     };
   };
 
   config = lib.mkIf cfg.enable {
     environment.systemPackages = [ bin reportBin ];
+
+    # The costs table the report reads, managed by Nix.
+    environment.etc."sglang-metrics/costs.json" = {
+      user = "root";
+      group = "root";
+      mode = "0444";
+      text = if costsOk
+      then builtins.toJSON cfg.costs
+      else throw "services.sglangMetrics.costs: every models entry and default need input and output";
+    };
 
     systemd.services.sglang-metrics-collect = {
       description = "Append SGLang /metrics counters to the usage database";

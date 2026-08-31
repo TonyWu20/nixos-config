@@ -251,19 +251,40 @@ fn load_price_table(path: &str) -> Result<Vec<PriceEntry>, String> {
         Some(Json::Num(n)) => *n,
         _ => 0.0,
     };
+    let entry_from_obj = |e: &[(String, Json)], id: String| -> PriceEntry {
+        let mut ids = vec![id];
+        if let Some(Json::Str(name)) = json_obj_get(e, "name") {
+            ids.push(name.clone());
+        }
+        PriceEntry {
+            ids,
+            input: num(e, "input"),
+            output: num(e, "output"),
+            cache_read: num(e, "cacheRead"),
+        }
+    };
     let mut out: Vec<PriceEntry> = Vec::new();
-    if let Some(Json::Obj(models)) = json_obj_get(items, "models") {
-        for (name, entry) in models {
-            let e = match entry {
-                Json::Obj(o) => o,
-                _ => continue,
-            };
-            out.push(PriceEntry {
-                ids: vec![name.clone()],
-                input: num(e, "input"),
-                output: num(e, "output"),
-                cache_read: num(e, "cacheRead"),
-            });
+    if let Some(m) = json_obj_get(items, "models") {
+        match m {
+            Json::Obj(models) => {
+                // map form: { "models": { "<id>": { ... } } }
+                for (name, entry) in models {
+                    if let Json::Obj(e) = entry {
+                        out.push(entry_from_obj(e, name.clone()));
+                    }
+                }
+            }
+            Json::Arr(arr) => {
+                // list form: { "models": [ { "id": ..., ... } ] }
+                for el in arr {
+                    if let Json::Obj(e) = el {
+                        if let Some(Json::Str(id)) = json_obj_get(e, "id") {
+                            out.push(entry_from_obj(e, id.clone()));
+                        }
+                    }
+                }
+            }
+            _ => {}
         }
     }
     if let Some(Json::Obj(e)) = json_obj_get(items, "default") {
