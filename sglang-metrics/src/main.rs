@@ -7,13 +7,17 @@
 // cached tokens, session counts, and the estimated cloud API cost
 // that local serving saved.
 //
-// Standard library only. No crates.
+// Single binary crate, built with cargo (see package.nix). The only
+// external dependency is clap, used for argument parsing.
 
 use std::collections::{BTreeMap, HashSet};
 use std::fs::File;
 use std::io::{Read, Write};
 use std::net::{TcpStream, ToSocketAddrs};
+use std::sync::OnceLock;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
+
+use clap::{Args, Parser, Subcommand, ValueEnum, ValueHint};
 
 const DEFAULT_DB: &str = "/var/lib/sglang-metrics/usage.tsv";
 
@@ -32,6 +36,88 @@ const M_GEN: &str = "sglang:generation_tokens_total";
 const M_REQ: &str = "sglang:num_requests_total";
 const M_CACHED: &str = "sglang:cached_tokens_total";
 const M_HIT: &str = "sglang:cache_hit_rate";
+
+// ---------- CLI (clap) ----------
+
+#[derive(Parser)]
+#[command(
+    name = "sglang-usage",
+    version,
+    about = "Persist SGLang /metrics across sessions.",
+)]
+struct Cli {
+    #[command(subcommand)]
+    cmd: Cmd,
+}
+
+#[derive(Subcommand)]
+enum Cmd {
+    /// Run one collection pass over the configured endpoints.
+    Scrape(ScrapeArgs),
+    /// Print the cumulative usage report.
+    Report(ReportArgs),
+    /// Print the per-session breakdown.
+    Sessions(ReportArgs),
+}
+
+#[derive(Args)]
+struct ScrapeArgs {
+    /// Path of the append-only TSV data file.
+    #[arg(long, default_value = DEFAULT_DB, value_hint = ValueHint::FilePath)]
+    db: String,
+
+    /// SGLang endpoint to scrape, HOST:PORT or NAME=HOST:PORT.
+    /// Repeat the flag to cover several endpoints.
+    #[arg(long, required = true)]
+    endpoint: Vec<String>,
+
+    /// Comma-separated metric names to persist.
+    #[arg(long, value_delimiter = ',')]
+    metrics: Option<Vec<String>>,
+
+    /// Connect and read timeout in seconds.
+    #[arg(long, default_value_t = 10.0)]
+    timeout: f64,
+}
+
+#[derive(Args)]
+struct ReportArgs {
+    /// Path of the append-only TSV data file.
+    #[arg(long, default_value = DEFAULT_DB, value_hint = ValueHint::FilePath)]
+    db: String,
+
+    /// Fallback input price, USD per million tokens.
+    #[arg(long, default_value_t = 3.0)]
+    input_price: f64,
+
+    /// Fallback output price, USD per million tokens.
+    #[arg(long, default_value_t = 15.0)]
+    output_price: f64,
+
+    /// JSON file with per-model prices.
+    #[arg(long, value_hint = ValueHint::FilePath)]
+    costs_file: Option<String>,
+
+    /// Comma-separated metric names the report reads.
+    #[arg(long, value_delimiter = ',')]
+    metrics: Option<Vec<String>>,
+
+    /// Output format for the report.
+    #[arg(long, value_enum, default_value_t = Format::Text)]
+    format: Format,
+
+    /// Shorthand for --format json.
+    #[arg(long)]
+    json: bool,
+}
+
+#[derive(Copy, Clone, Debug, PartialEq, Eq, ValueEnum)]
+enum Format {
+    Text,
+    Json,
+    Yaml,
+    Toml,
+}
 
 struct Sample {
     name: String,
@@ -367,28 +453,6 @@ fn extract_model(labels: &str) -> String {
     "unknown".to_string()
 }
 
-// ---------- flags ----------
-
-fn collect<'a>(args: &[&'a str], key: &str) -> Vec<&'a str> {
-    let mut out = Vec::new();
-    let mut i = 0;
-    while i < args.len() {
-        if args[i] == key {
-            if i + 1 < args.len() {
-                out.push(args[i + 1]);
-            }
-            i += 2;
-        } else {
-            i += 1;
-        }
-    }
-    out
-}
-
-fn opt<'a>(args: &[&'a str], key: &str) -> Option<&'a str> {
-    collect(args, key).into_iter().next()
-}
-
 fn parse_endpoint(arg: &str) -> Result<(String, String, u16), String> {
     let hostport = match arg.split_once('=') {
         Some((_, hp)) => hp.to_string(),
@@ -434,7 +498,7 @@ fn http_metrics(host: &str, port: u16, timeout: Duration) -> Result<String, Stri
     stream
         .write_all(req.as_bytes())
         .map_err(|e| e.to_string())?;
-    let mut buf = Vec::new();
+    let mut buf: Vec<u8> = Vec::new();
     stream.read_to_end(&mut buf).map_err(|e| e.to_string())?;
     parse_response(&buf)
 }
@@ -888,25 +952,135 @@ fn endpoint_summary(
     }
 }
 
-// ---------- formatting ----------
+// ---------- local time ----------
 
-fn iso_utc(ts: f64) -> String {
-    let secs = ts as i64;
-    let days = secs.div_euclid(86400);
-    let rem = secs.rem_euclid(86400);
-    let (y, mo, d) = civil_from_days(days);
-    format!(
-        "{:04}-{:02}-{:02} {:02}:{:02} UTC",
-        y,
-        mo,
-        d,
-        rem / 3600,
-        (rem % 3600) / 60
+// glibc struct tm layout on x86_64 Linux. The last two fields
+// (tm_gmtoff, tm_zone) extend the POSIX base and are stable in glibc.
+#[repr(C)]
+struct Tm {
+    tm_sec: i32,
+    tm_min: i32,
+    tm_hour: i32,
+    tm_mday: i32,
+    tm_mon: i32,
+    tm_year: i32,
+    tm_wday: i32,
+    tm_yday: i32,
+    tm_isdst: i32,
+    tm_gmtoff: i64,
+    tm_zone: *const i8,
+}
+
+extern "C" {
+    fn localtime_r(timep: *const i64, result: *mut Tm) -> *mut Tm;
+}
+
+struct TzInfo {
+    zone: String,
+    offset: i64,
+}
+
+// Current local zone name and UTC offset, read once.
+fn tz_info() -> &'static TzInfo {
+    static ONCE: OnceLock<TzInfo> = OnceLock::new();
+    ONCE.get_or_init(|| {
+        let now = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .map(|d| d.as_secs() as i64)
+            .unwrap_or(0);
+        let mut tm: Tm = unsafe { std::mem::zeroed() };
+        if unsafe { localtime_r(&now, &mut tm) }.is_null() {
+            return TzInfo {
+                zone: "UTC".to_string(),
+                offset: 0,
+            };
+        }
+        TzInfo {
+            zone: zone_name(&tm),
+            offset: tm.tm_gmtoff,
+        }
+    })
+}
+
+fn zone_name(tm: &Tm) -> String {
+    let s = unsafe { std::ffi::CStr::from_ptr(tm.tm_zone) }
+        .to_string_lossy()
+        .into_owned();
+    if s.trim().is_empty() {
+        "UTC".to_string()
+    } else {
+        s
+    }
+}
+
+// Local calendar parts for the moment `ts` (epoch seconds):
+// (year, month, day, hour, minute, UTC offset, zone name). The offset
+// and zone honor DST rules for that exact moment.
+fn local_parts(ts: f64) -> (i64, u32, u32, u32, u32, i64, String) {
+    let t = ts as i64;
+    let mut tm: Tm = unsafe { std::mem::zeroed() };
+    if unsafe { localtime_r(&t, &mut tm) }.is_null() {
+        // No tz database; fall back to UTC civil days.
+        let days = t.div_euclid(86400);
+        let rem = t.rem_euclid(86400);
+        let (y, mo, d) = civil_from_days(days);
+        return (
+            y,
+            mo,
+            d,
+            (rem / 3600) as u32,
+            ((rem % 3600) / 60) as u32,
+            0,
+            "UTC".to_string(),
+        );
+    }
+    (
+        tm.tm_year as i64 + 1900,
+        tm.tm_mon as u32 + 1,
+        tm.tm_mday as u32,
+        tm.tm_hour as u32,
+        tm.tm_min as u32,
+        tm.tm_gmtoff,
+        zone_name(&tm),
     )
 }
 
+// "2025-11-16 09:41 CST"
+fn fmt_local(ts: f64) -> String {
+    let (y, mo, d, h, mi, _off, zone) = local_parts(ts);
+    format!("{:04}-{:02}-{:02} {:02}:{:02} {zone}", y, mo, d, h, mi)
+}
+
+// "2025-11-16T09:41-06:00"
+fn iso_local(ts: f64) -> String {
+    let (y, mo, d, h, mi, off, _zone) = local_parts(ts);
+    let (sign, abs) = if off < 0 {
+        ("-", -off)
+    } else {
+        ("+", off)
+    };
+    format!(
+        "{:04}-{:02}-{:02}T{:02}:{:02}{sign}{:02}:{:02}",
+        y,
+        mo,
+        d,
+        h,
+        mi,
+        abs / 3600,
+        (abs % 3600) / 60
+    )
+}
+
+fn fmt_ts(ts: Option<f64>) -> String {
+    match ts {
+        Some(v) => fmt_local(v),
+        None => "ongoing".to_string(),
+    }
+}
+
 fn civil_from_days(z0: i64) -> (i64, u32, u32) {
-    // Howard Hinnant's civil calendar algorithm.
+    // Howard Hinnant's civil calendar algorithm. Used only as a UTC
+    // fallback when localtime_r fails.
     let z = z0 + 719468;
     let era = if z >= 0 { z } else { z - 146096 } / 146097;
     let doe = z - era * 146097;
@@ -918,13 +1092,6 @@ fn civil_from_days(z0: i64) -> (i64, u32, u32) {
     let m = if m < 10 { m + 3 } else { m - 9 };
     let y = if m <= 2 { y + 1 } else { y };
     (y, m as u32, d as u32)
-}
-
-fn fmt_ts(ts: Option<f64>) -> String {
-    match ts {
-        Some(v) => iso_utc(v),
-        None => "ongoing".to_string(),
-    }
 }
 
 fn fmt_int(v: f64) -> String {
@@ -963,26 +1130,16 @@ fn jesc(s: &str) -> String {
 
 // ---------- subcommands ----------
 
-fn cmd_scrape(args: &[&str]) -> i32 {
-    let db = opt(args, "--db").unwrap_or(DEFAULT_DB);
-    let timeout_s: f64 = opt(args, "--timeout")
-        .and_then(|s| s.parse().ok())
-        .unwrap_or(10.0);
-    let metrics: Vec<String> = match opt(args, "--metrics") {
-        Some(m) => m.split(',').map(|x| x.trim().to_string()).filter(|x| !x.is_empty()).collect(),
-        None => default_metrics(),
-    };
-    let eps = collect(args, "--endpoint");
-    if eps.is_empty() {
-        eprintln!("scrape: give --endpoint HOST:PORT (repeatable)");
-        return 2;
-    }
+fn cmd_scrape(args: &ScrapeArgs) -> i32 {
+    let db = args.db.clone();
+    let timeout_s = args.timeout;
+    let metrics = args.metrics.clone().unwrap_or_else(default_metrics);
     let wanted: HashSet<String> = metrics.iter().cloned().collect();
     let now = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .map(|d| d.as_secs_f64())
         .unwrap_or(0.0);
-    let mut file = match File::options().create(true).append(true).open(db) {
+    let mut file = match File::options().create(true).append(true).open(&db) {
         Ok(f) => f,
         Err(e) => {
             eprintln!("scrape: cannot open {db}: {e}");
@@ -990,7 +1147,7 @@ fn cmd_scrape(args: &[&str]) -> i32 {
         }
     };
     let mut ok_count = 0usize;
-    for ep in &eps {
+    for ep in &args.endpoint {
         let (name, host, port) = match parse_endpoint(ep) {
             Ok(t) => t,
             Err(e) => {
@@ -1034,12 +1191,12 @@ fn cmd_scrape(args: &[&str]) -> i32 {
     }
 }
 
-fn run_report_and_sessions(args: &[&str], sessions_only: bool) -> i32 {
-    let db = opt(args, "--db").unwrap_or(DEFAULT_DB);
-    let input_price: f64 = opt(args, "--input-price").and_then(|s| s.parse().ok()).unwrap_or(3.0);
-    let output_price: f64 = opt(args, "--output-price").and_then(|s| s.parse().ok()).unwrap_or(15.0);
-    let as_json = args.iter().any(|a| *a == "--json");
-    let costs_file = opt(args, "--costs-file").map(|s| s.to_string());
+fn run_report_and_sessions(args: &ReportArgs, sessions_only: bool) -> i32 {
+    let db = args.db.clone();
+    let input_price = args.input_price;
+    let output_price = args.output_price;
+    let format = if args.json { Format::Json } else { args.format };
+    let costs_file = args.costs_file.clone();
     let mut table: Option<Vec<PriceEntry>> = None;
     if let Some(path) = &costs_file {
         match load_price_table(path) {
@@ -1047,11 +1204,8 @@ fn run_report_and_sessions(args: &[&str], sessions_only: bool) -> i32 {
             Err(e) => eprintln!("report: {e} (using fallback prices)"),
         }
     }
-    let metrics: Vec<String> = match opt(args, "--metrics") {
-        Some(m) => m.split(',').map(|x| x.trim().to_string()).filter(|x| !x.is_empty()).collect(),
-        None => default_metrics(),
-    };
-    let (rows, meta) = match load_db(db) {
+    let metrics: Vec<String> = args.metrics.clone().unwrap_or_else(default_metrics);
+    let (rows, meta) = match load_db(&db) {
         Ok(d) => d,
         Err(e) => {
             eprintln!("report: {e}");
@@ -1086,8 +1240,13 @@ fn run_report_and_sessions(args: &[&str], sessions_only: bool) -> i32 {
             costs_file.clone(),
         ));
     }
-    if as_json {
-        print!("{}", json_report(&summaries));
+    if format != Format::Text {
+        match format {
+            Format::Text => unreachable!(),
+            Format::Json => print!("{}", json_report(&summaries)),
+            Format::Yaml => print!("{}", yaml_report(&summaries)),
+            Format::Toml => print!("{}", toml_report(&summaries)),
+        }
         return 0;
     }
     if sessions_only {
@@ -1099,11 +1258,11 @@ fn run_report_and_sessions(args: &[&str], sessions_only: bool) -> i32 {
             }
             for (i, s) in r.sessions.iter().enumerate() {
                 let start = match s.start {
-                    Some(v) => format!("{} ", iso_utc(v)),
+                    Some(v) => format!("{} ", fmt_local(v)),
                     None => "db start  ".to_string(),
                 };
                 let end = match s.end {
-                    Some(v) => iso_utc(v),
+                    Some(v) => fmt_local(v),
                     None => "ongoing".to_string(),
                 };
                 println!("  {}: {}-> {}", i + 1, start, end);
@@ -1204,27 +1363,56 @@ fn run_report_and_sessions(args: &[&str], sessions_only: bool) -> i32 {
     0
 }
 
+// ---------- structured output ----------
+
+fn num_or_null(v: Option<f64>) -> String {
+    match v {
+        Some(x) => x.to_string(),
+        None => "null".to_string(),
+    }
+}
+
+fn str_or_null(v: Option<String>) -> String {
+    match v {
+        Some(x) => format!("\"{}\"", jesc(&x)),
+        None => "null".to_string(),
+    }
+}
+
 fn json_report(summaries: &[EpSummary]) -> String {
+    let tz = tz_info();
     let mut s = String::from("[\n");
     for (i, r) in summaries.iter().enumerate() {
         if i > 0 {
             s.push_str(",\n");
         }
         s.push_str(&format!("  {{\n    \"endpoint\": \"{}\",\n", jesc(&r.endpoint)));
-        s.push_str(&format!("    \"session_count\": {},\n", r.session_count));
         s.push_str(&format!(
-            "    \"first_ts\": {},\n",
-            r.first_ts
-                .map(|t| format!("\"{}\"", iso_utc(t)))
-                .unwrap_or_else(|| "null".into())
+            "    \"timezone\": \"{}\",\n",
+            jesc(&tz.zone)
         ));
         s.push_str(&format!(
-            "    \"last_ts\": {},\n",
-            r.last_ts
-                .map(|t| format!("\"{}\"", iso_utc(t)))
-                .unwrap_or_else(|| "null".into())
+            "    \"timezone_offset_seconds\": {},\n",
+            tz.offset
         ));
-        s.push_str(&format!("    \"scrape_count\": {},\n", r.scrape_count));
+        s.push_str(&format!(
+            "    \"session_count\": {},\n",
+            r.session_count
+        ));
+        s.push_str(&format!("    \"first_ts\": {},\n", num_or_null(r.first_ts)));
+        s.push_str(&format!(
+            "    \"first_ts_local\": {},\n",
+            str_or_null(r.first_ts.map(iso_local))
+        ));
+        s.push_str(&format!("    \"last_ts\": {},\n", num_or_null(r.last_ts)));
+        s.push_str(&format!(
+            "    \"last_ts_local\": {},\n",
+            str_or_null(r.last_ts.map(iso_local))
+        ));
+        s.push_str(&format!(
+            "    \"scrape_count\": {},\n",
+            r.scrape_count
+        ));
         s.push_str(&format!(
             "    \"last_status\": \"{}\",\n",
             jesc(&r.last_status)
@@ -1241,15 +1429,19 @@ fn json_report(summaries: &[EpSummary]) -> String {
             s.push_str("      {");
             s.push_str(&format!(
                 "\"start\": {}, ",
-                win.start
-                    .map(|t| format!("\"{}\"", iso_utc(t)))
-                    .unwrap_or_else(|| "null".into())
+                num_or_null(win.start)
             ));
             s.push_str(&format!(
-                "\"end\": {}",
-                win.end
-                    .map(|t| format!("\"{}\"", iso_utc(t)))
-                    .unwrap_or_else(|| "null".into())
+                "\"end\": {}, ",
+                num_or_null(win.end)
+            ));
+            s.push_str(&format!(
+                "\"start_local\": {}, ",
+                str_or_null(win.start.map(iso_local))
+            ));
+            s.push_str(&format!(
+                "\"end_local\": {}",
+                str_or_null(win.end.map(iso_local))
             ));
             s.push_str(",\n      \"totals\": {");
             let mut first = true;
@@ -1322,39 +1514,249 @@ fn json_report(summaries: &[EpSummary]) -> String {
     s
 }
 
-// ---------- main ----------
-
-fn usage() {
-    println!("sglang-usage: persist SGLang /metrics across sessions");
-    println!("usage:");
-    println!("  sglang-usage scrape --db PATH --endpoint HOST:PORT [--endpoint ...]");
-    println!("      [--metrics a,b,c] [--timeout SECS]");
-    println!("  sglang-usage report [--db PATH] [--input-price 3.0] [--output-price 15.0]");
-    println!("      [--costs-file PATH] [--metrics a,b,c] [--json]");
-    println!("  sglang-usage sessions [--db PATH]");
+fn y_s(v: &str) -> String {
+    format!("\"{}\"", jesc(v))
 }
 
-fn main() {
-    let args: Vec<String> = std::env::args().skip(1).collect();
-    if args.is_empty() {
-        usage();
-        std::process::exit(2);
+fn y_s_opt(v: Option<String>) -> String {
+    match v {
+        Some(x) => y_s(&x),
+        None => "null".to_string(),
     }
-    let cmd = args[0].as_str();
-    let rest: Vec<&str> = args[1..].iter().map(|s| s.as_str()).collect();
-    let code = match cmd {
-        "scrape" => cmd_scrape(&rest),
-        "report" => run_report_and_sessions(&rest, false),
-        "sessions" => run_report_and_sessions(&rest, true),
-        "help" | "-h" | "--help" => {
-            usage();
-            0
+}
+
+fn yaml_report(summaries: &[EpSummary]) -> String {
+    let mut s = String::new();
+    for (i, r) in summaries.iter().enumerate() {
+        if i > 0 {
+            s.push('\n');
         }
-        _ => {
-            eprintln!("unknown command: {cmd}");
-            usage();
-            2
+        s.push_str(&yaml_endpoint(r));
+    }
+    s.push('\n');
+    s
+}
+
+fn yaml_endpoint(r: &EpSummary) -> String {
+    let tz = tz_info();
+    let i = "  ";
+    let j = "    ";
+    let k = "      ";
+    let mut s = String::new();
+    s.push_str(&format!("- endpoint: {}\n", y_s(&r.endpoint)));
+    s.push_str(&format!("{i}timezone: {}\n", y_s(&tz.zone)));
+    s.push_str(&format!(
+        "{i}timezone_offset_seconds: {}\n",
+        tz.offset
+    ));
+    s.push_str(&format!("{i}session_count: {}\n", r.session_count));
+    s.push_str(&format!("{i}first_ts: {}\n", num_or_null(r.first_ts)));
+    s.push_str(&format!(
+        "{i}first_ts_local: {}\n",
+        y_s_opt(r.first_ts.map(iso_local))
+    ));
+    s.push_str(&format!("{i}last_ts: {}\n", num_or_null(r.last_ts)));
+    s.push_str(&format!(
+        "{i}last_ts_local: {}\n",
+        y_s_opt(r.last_ts.map(iso_local))
+    ));
+    s.push_str(&format!("{i}scrape_count: {}\n", r.scrape_count));
+    s.push_str(&format!("{i}last_status: {}\n", y_s(&r.last_status)));
+    s.push_str(&format!("{i}est_cost_usd: {}\n", r.est_cost));
+    s.push_str(&format!(
+        "{i}costs_file: {}\n",
+        y_s_opt(r.costs_file.clone())
+    ));
+    s.push('\n');
+    if r.sessions.is_empty() {
+        s.push_str(&format!("{i}sessions: []\n"));
+    } else {
+        s.push_str(&format!("{i}sessions:\n"));
+        for win in &r.sessions {
+            s.push_str(&format!("{j}- start: {}\n", num_or_null(win.start)));
+            s.push_str(&format!("{j}  end: {}\n", num_or_null(win.end)));
+            s.push_str(&format!(
+                "{j}  start_local: {}\n",
+                y_s_opt(win.start.map(iso_local))
+            ));
+            s.push_str(&format!(
+                "{j}  end_local: {}\n",
+                y_s_opt(win.end.map(iso_local))
+            ));
+            s.push_str(&format!("{j}  totals:\n"));
+            for (key, v) in &win.totals {
+                s.push_str(&format!("{k}{}: {}\n", y_s(key), v));
+            }
         }
+    }
+    s.push('\n');
+    if r.grand.is_empty() {
+        s.push_str(&format!("{i}totals: {{}}\n"));
+    } else {
+        s.push_str(&format!("{i}totals:\n"));
+        for (key, v) in &r.grand {
+            s.push_str(&format!("{j}{}: {}\n", y_s(key), v));
+        }
+    }
+    s.push('\n');
+    s.push_str(&format!("{i}cache_hit_rate:\n"));
+    s.push_str(&format!("{j}avg: {}\n", num_or_null(r.hit_avg)));
+    s.push_str(&format!("{j}latest: {}\n", num_or_null(r.hit_latest)));
+    s.push('\n');
+    if r.model_costs.is_empty() {
+        s.push_str(&format!("{i}by_model: []\n"));
+    } else {
+        s.push_str(&format!("{i}by_model:\n"));
+        for mc in &r.model_costs {
+            s.push_str(&format!("{j}- model: {}\n", y_s(&mc.model)));
+            s.push_str(&format!(
+                "{j}  matched: {}\n",
+                y_s_opt(mc.matched.clone())
+            ));
+            s.push_str(&format!("{j}  prompt_tokens: {}\n", mc.prompt));
+            s.push_str(&format!("{j}  cached_tokens: {}\n", mc.cached));
+            s.push_str(&format!("{j}  generation_tokens: {}\n", mc.gen));
+            s.push_str(&format!("{j}  requests: {}\n", mc.reqs));
+            s.push_str(&format!("{j}  input_price: {}\n", mc.input_price));
+            s.push_str(&format!("{j}  output_price: {}\n", mc.output_price));
+            s.push_str(&format!(
+                "{j}  cache_read_price: {}\n",
+                mc.cache_read_price
+            ));
+            s.push_str(&format!("{j}  est_cost_usd: {}\n", mc.est_cost));
+        }
+    }
+    s
+}
+
+fn t_s(v: &str) -> String {
+    format!("\"{}\"", jesc(v))
+}
+
+fn t_f(v: f64) -> String {
+    if !v.is_finite() {
+        return "0.0".to_string();
+    }
+    let t = v.to_string();
+    if t.contains('.') || t.contains('e') {
+        t
+    } else {
+        format!("{t}.0")
+    }
+}
+
+fn t_f_opt(out: &mut String, key: &str, v: Option<f64>) {
+    if let Some(x) = v {
+        out.push_str(&format!("{key} = {}\n", t_f(x)));
+    }
+}
+
+fn t_s_opt(out: &mut String, key: &str, v: Option<String>) {
+    if let Some(x) = v {
+        out.push_str(&format!("{key} = {}\n", t_s(&x)));
+    }
+}
+
+fn toml_report(summaries: &[EpSummary]) -> String {
+    let tz = tz_info();
+    let mut s = String::new();
+    s.push_str("# sglang-usage report\n");
+    s.push_str(&format!("timezone = {}\n", t_s(&tz.zone)));
+    s.push_str(&format!(
+        "timezone_offset_seconds = {}\n\n",
+        tz.offset
+    ));
+    for r in summaries {
+        s.push_str(&toml_endpoint(r));
+    }
+    s
+}
+
+fn toml_endpoint(r: &EpSummary) -> String {
+    let mut s = String::new();
+    s.push_str("[[endpoints]]\n");
+    s.push_str(&format!("endpoint = {}\n", t_s(&r.endpoint)));
+    s.push_str(&format!("session_count = {}\n", r.session_count));
+    t_f_opt(&mut s, "first_ts", r.first_ts);
+    t_s_opt(&mut s, "first_ts_local", r.first_ts.map(iso_local));
+    t_f_opt(&mut s, "last_ts", r.last_ts);
+    t_s_opt(&mut s, "last_ts_local", r.last_ts.map(iso_local));
+    s.push_str(&format!("scrape_count = {}\n", r.scrape_count));
+    s.push_str(&format!(
+        "last_status = {}\n",
+        t_s(&r.last_status)
+    ));
+    s.push_str(&format!("est_cost_usd = {}\n", t_f(r.est_cost)));
+    t_s_opt(&mut s, "costs_file", r.costs_file.clone());
+
+    if r.sessions.is_empty() {
+        s.push_str("sessions = []\n");
+    } else {
+        for win in &r.sessions {
+            s.push_str("[[endpoints.sessions]]\n");
+            t_f_opt(&mut s, "start", win.start);
+            t_f_opt(&mut s, "end", win.end);
+            t_s_opt(&mut s, "start_local", win.start.map(iso_local));
+            t_s_opt(&mut s, "end_local", win.end.map(iso_local));
+            s.push_str("[endpoints.sessions.totals]\n");
+            for (key, v) in &win.totals {
+                s.push_str(&format!("{} = {}\n", t_s(key), t_f(*v)));
+            }
+        }
+        s.push('\n');
+    }
+
+    if r.model_costs.is_empty() {
+        s.push_str("by_model = []\n");
+    } else {
+        for mc in &r.model_costs {
+            s.push_str("[[endpoints.by_model]]\n");
+            s.push_str(&format!("model = {}\n", t_s(&mc.model)));
+            t_s_opt(&mut s, "matched", mc.matched.clone());
+            s.push_str(&format!("prompt_tokens = {}\n", t_f(mc.prompt)));
+            s.push_str(&format!("cached_tokens = {}\n", t_f(mc.cached)));
+            s.push_str(&format!(
+                "generation_tokens = {}\n",
+                t_f(mc.gen)
+            ));
+            s.push_str(&format!("requests = {}\n", t_f(mc.reqs)));
+            s.push_str(&format!("input_price = {}\n", t_f(mc.input_price)));
+            s.push_str(&format!("output_price = {}\n", t_f(mc.output_price)));
+            s.push_str(&format!(
+                "cache_read_price = {}\n",
+                t_f(mc.cache_read_price)
+            ));
+            s.push_str(&format!("est_cost_usd = {}\n", t_f(mc.est_cost)));
+        }
+        s.push('\n');
+    }
+
+    if r.grand.is_empty() {
+        s.push_str("totals = {}\n");
+    } else {
+        s.push_str("[endpoints.totals]\n");
+        for (key, v) in &r.grand {
+            s.push_str(&format!("{} = {}\n", t_s(key), t_f(*v)));
+        }
+    }
+
+    if r.hit_avg.is_some() || r.hit_latest.is_some() {
+        s.push_str("[endpoints.cache_hit_rate]\n");
+        t_f_opt(&mut s, "avg", r.hit_avg);
+        t_f_opt(&mut s, "latest", r.hit_latest);
+    }
+    s.push('\n');
+    s
+}
+
+// ---------- main ----------
+
+fn main() {
+    let cli = Cli::parse();
+    let code = match cli.cmd {
+        Cmd::Scrape(a) => cmd_scrape(&a),
+        Cmd::Report(a) => run_report_and_sessions(&a, false),
+        Cmd::Sessions(a) => run_report_and_sessions(&a, true),
     };
     std::process::exit(code);
 }

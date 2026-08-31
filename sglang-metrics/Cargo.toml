@@ -1,0 +1,9 @@
+[package]
+name = "sglang-usage"
+version = "1.0.0"
+edition = "2021"
+description = "Persist SGLang /metrics across sessions in a plain TSV file"
+license = "MIT"
+
+[dependencies]
+clap = { version = "4.5", features = ["derive"] }

@@ -1,22 +1,18 @@
-# Derivation for the sglang-usage tool. A single std-only Rust
-# file, built with rustc. No crates, no lockfile, no network.
+# Derivation for the sglang-usage tool. A single binary crate, built
+# with cargo. Dependencies are pinned by Cargo.lock and fetched from
+# crates.io; the build then runs offline against the pinned sources.
+# The only runtime dependency is clap, linked statically.
 { pkgs }:
 
-let
-  rustc = pkgs.rustc;
-in
-pkgs.stdenv.mkDerivation (finalAttrs: {
+pkgs.rustPlatform.buildRustPackage (finalAttrs: {
   pname = "sglang-usage";
   version = "1.0.0";
 
   src = ./.;
-  nativeBuildInputs = [ rustc ];
-
-  buildPhase = ''
-    runHook preBuild
-    mkdir -p $out/bin
-    ${rustc}/bin/rustc -O src/main.rs -o $out/bin/sglang-usage
-  '';
+  cargoLock = {
+    lockFile = ./Cargo.lock;
+  };
+  doCheck = false;
 
   meta = with pkgs.lib; {
     description = "Persist SGLang /metrics across sessions in a plain TSV file";
@@ -30,5 +26,6 @@ pkgs.stdenv.mkDerivation (finalAttrs: {
     '';
     license = licenses.mit;
     platforms = platforms.all;
+    mainProgram = "sglang-usage";
   };
 })

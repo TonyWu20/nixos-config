@@ -7,7 +7,7 @@ The file survives SGLang restarts. SGLang counters reset on every
 restart, so the tool detects each reset as a session boundary and
 aggregates sessions into lifetime totals.
 
-Requires `enable-metrics: true` in the SGLang server config.
+The SGLang server config must set `enable-metrics: true`.
 
 ## Commands
 
@@ -22,9 +22,17 @@ Requires `enable-metrics: true` in the SGLang server config.
   collection pass by hand (`sudo systemctl start
   sglang-metrics-collect` works too).
 
-- `sglang-usage report --json` — machine-readable output.
+- `sglang-usage report --format json|yaml|toml` — structured output.
+  `--json` stays as a shortcut for `--format json`.
 
 ## Report flags
+
+- `--format text|json|yaml|toml` — output format. The text format is
+  the default. Structured formats carry one entry per endpoint:
+  totals, sessions, per-model costs, cache hit rate, and the
+  estimated cloud cost. Timestamps are epoch seconds (`*_ts`) plus a
+  local time string (`*_ts_local`, e.g. `2025-11-15T06:13+08:00`).
+  TOML omits fields that are null.
 
 - `--costs-file PATH` — JSON file with per-model prices (see below).
   The Nix wrapper passes the `costsFile` option automatically.
@@ -34,6 +42,21 @@ Requires `enable-metrics: true` in the SGLang server config.
   not match.
 
 - `--metrics a,b,c` — change which metric names the report reads.
+
+## Time display
+
+Report times show in the local timezone (the `TZ` of the machine
+that runs the report, DST rules included). Structured output adds
+`timezone` (zone abbreviation, e.g. `HKT`) and
+`timezone_offset_seconds` for the current local zone.
+
+## Build
+
+Single binary crate, built with cargo. Dependencies are pinned in
+`Cargo.lock` (fetched from crates.io at build time, then the build
+runs offline). The only dependency is clap, used for argument
+parsing. `package.nix` builds the tool via
+`rustPlatform.buildRustPackage`.
 
 ## Costs file
 
