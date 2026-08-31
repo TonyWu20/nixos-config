@@ -6,6 +6,7 @@
     ../sops
     ../slurm
     ../munge
+    ../sglang-metrics
   ];
 
   # ---- nixpkgs config (CUDA, unfree) ----

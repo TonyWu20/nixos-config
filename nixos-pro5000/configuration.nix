@@ -73,5 +73,12 @@
   services.zerotierone.joinNetworks = [ "b15644912e4d3047" ];
   services.slurm.extraConfigPaths = [ ../slurm/nixos-pro5000 ];
 
+  # Persist SGLang /metrics across sessions so token usage and the
+  # local-serving savings accumulate in /var/lib/sglang-metrics.
+  services.sglangMetrics = {
+    enable = true;
+    endpoints = [ "127.0.0.1:30000" "127.0.0.1:31000" ];
+  };
+
   system.stateVersion = "25.05";
 }

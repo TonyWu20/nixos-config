@@ -165,6 +165,9 @@
     in
     {
       packages.x86_64-linux.default = fenix.packages.x86_64-linux.stable.toolchain;
+      packages.x86_64-linux.sglang-usage = import ./sglang-metrics/package.nix {
+        inherit pkgs;
+      };
 
       devShells.${system} = {
         rs_font = pkgs.mkShell {
