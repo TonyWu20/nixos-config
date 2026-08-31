@@ -3,3 +3,4 @@ rime/rime-data-myflypy/share/rime-data/build/*
 sops/age/
 sops/*_id_ed25519
 sops/*_id_ed25519.pub
+result
