@@ -52,7 +52,7 @@ in
 
     endpoints = lib.mkOption {
       type = lib.types.listOf lib.types.str;
-      default = [ "127.0.0.1:30000" "127.0.0.1:31000" ];
+      default = [ "127.0.0.1:30000"];
       description = ''
         SGLang endpoints to scrape, as HOST:PORT or NAME=HOST:PORT.
         The NAME part labels the data rows. The server must run with
