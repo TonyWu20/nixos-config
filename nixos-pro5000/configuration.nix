@@ -29,6 +29,30 @@
     firewall.trustedInterfaces = [ "enp11s0" ];
   };
 
+  # Register the cluster DNS server with resolvconf. The DNS/NAT gateway is
+  # nixos-2 (10.0.0.3). The stock path (network-local-commands.service pushes
+  # networking.nameservers into resolvconf) can be dropped at boot: an
+  # ordering cycle with the NFS mounts makes systemd delete that job, leaving
+  # /etc/resolv.conf with no nameserver and breaking DNS. This service is a
+  # dependency of multi-user.target, not of network.target, so the boot-cycle
+  # resolution cannot drop it. It registers the "static" interface, which
+  # resolvconf then folds into /etc/resolv.conf.
+  systemd.services.cluster-resolvconf = {
+    description = "Register cluster DNS server with resolvconf";
+    after = [ "resolvconf.service" ];
+    wants = [ "resolvconf.service" ];
+    wantedBy = [ "multi-user.target" ];
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+    };
+    script = ''
+      ${pkgs.openresolv}/sbin/resolvconf -m 1 -a static <<EOF
+      nameserver 10.0.0.3
+      EOF
+    '';
+  };
+
   # Default route via nixos-2 (10.0.0.3), the cluster NAT/DNS gateway. This
   # machine has no working wifi uplink of its own, so the LAN gateway is its
   # only path to the internet.
@@ -50,7 +74,4 @@
   services.slurm.extraConfigPaths = [ ../slurm/nixos-pro5000 ];
 
   system.stateVersion = "25.05";
-  environment.systemPackages = with pkgs; [
-    (llama-cpp.override { rpcSupport = true; })
-  ];
 }

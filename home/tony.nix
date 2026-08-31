@@ -1,4 +1,4 @@
-{ config, lib, ... }:
+{ config, lib, pkgs, ... }:
 let
   secretNames = [
     "poe_chatbot_api"
@@ -35,4 +35,7 @@ in
   ];
 
   sops.secrets = apiSecrets;
+  home.packages = with pkgs; [
+    terminal-browser
+  ];
 }

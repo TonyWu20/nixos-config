@@ -49,8 +49,4 @@
   };
 
   system.stateVersion = "24.11";
-
-  environment.systemPackages = with pkgs; [
-    (llama-cpp.override { rpcSupport = true; cudaSupport = true; })
-  ];
 }

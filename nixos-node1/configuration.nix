@@ -21,12 +21,5 @@
 
   services.slurm.extraConfigPaths = [ ../slurm/nixos-node1 ];
 
-
-
-  environment.systemPackages = with pkgs; [
-    (llama-cpp.override { rpcSupport = true; })
-    litellm
-  ];
-
   system.stateVersion = "24.11";
 }

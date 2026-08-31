@@ -35,10 +35,12 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     pi-config = {
-      #url = "git+ssh://git@github.com/TonyWu20/pi-config";
-      url = "git+file:///home/tony/programming/pi-config";
+      url = "git+ssh://git@github.com/TonyWu20/pi-config";
+      #url = "git+file:///home/tony/programming/pi-config";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    sglang-flake.url = "github:TonyWu20/sglang_flake";
+    terminal-browser-flake.url = "github:TonyWu20/terminal-browser-flake";
   };
 
   outputs =
@@ -55,6 +57,8 @@
     , wait-for-lsp
     , pi
     , pi-config
+    , sglang-flake
+    , terminal-browser-flake
     , ...
     }:
     let
@@ -82,6 +86,7 @@
         fenix.overlays.default
         claude-code-overlay
         wait-for-lsp.overlays.default
+        (import ./overlays/llama-cpp-dflash2.nix)
         #(final: prev: {
         #  python3 = final.python313;
         #  python3Packages = final.python313Packages;
@@ -91,6 +96,8 @@
             python3 = final.python313;
           };
         })
+        sglang-flake.overlays.default
+        terminal-browser-flake.overlays.default
       ];
 
       pkgs = import nixpkgs {
@@ -148,6 +155,7 @@
                   extraSpecialArgs = { inherit inputs pi-config; };
                 };
               }
+              sglang-flake.nixosModules.default
             ]
             # Optional fcitx5 IME (not needed on all machines)
             ++ nixpkgs.lib.optional enableFcitx5 ./fcitx5
