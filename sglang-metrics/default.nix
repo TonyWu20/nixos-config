@@ -19,6 +19,7 @@ let
   reportBin = pkgs.writeShellScriptBin "sglang-usage-report" ''
     exec ${bin}/bin/sglang-usage report \
       --db ${cfg.dbPath} \
+      --costs-file ${cfg.costsFile} \
       --input-price ${lib.toString (cfg.costs.inputPerMioUSD or 3.0)} \
       --output-price ${lib.toString (cfg.costs.outputPerMioUSD or 15.0)} \
       "$@"
@@ -67,6 +68,18 @@ in
         "sglang:cache_hit_rate"
       ];
       description = "Metric names to persist on every scrape.";
+    };
+
+    costsFile = lib.mkOption {
+      type = lib.types.str;
+      default = "/home/tony/.local/share/sglang-metrics/costs.json";
+      description = ''
+        Path to the JSON costs file the report uses for per-model prices.
+        Schema: `{ "models": { <id>: { input, output, cacheRead? } },
+        "default": { input, output, cacheRead? } }` in USD per 1M tokens.
+        If the file is missing, the report falls back to the `costs`
+        option prices.
+      '';
     };
 
     costs = lib.mkOption {

@@ -44,6 +44,308 @@ fn default_metrics() -> Vec<String> {
     DEFAULT_METRICS.iter().map(|s| s.to_string()).collect()
 }
 
+// ---------- cost table (pi models.json) ----------
+
+#[derive(Debug, Clone)]
+enum Json {
+    Null,
+    Bool(bool),
+    Num(f64),
+    Str(String),
+    Arr(Vec<Json>),
+    Obj(Vec<(String, Json)>),
+}
+
+fn json_skip_ws(c: &[char], i: &mut usize) {
+    while *i < c.len() {
+        match c[*i] {
+            ' ' | '\t' | '\n' | '\r' => *i += 1,
+            _ => break,
+        }
+    }
+}
+
+fn json_parse_value(c: &[char], i: &mut usize) -> Result<Json, String> {
+    json_skip_ws(c, i);
+    let ch = c.get(*i).copied().ok_or("unexpected end of input")?;
+    match ch {
+        '{' => {
+            *i += 1;
+            let mut items: Vec<(String, Json)> = Vec::new();
+            json_skip_ws(c, i);
+            if c.get(*i) == Some(&'}') {
+                *i += 1;
+                return Ok(Json::Obj(items));
+            }
+            loop {
+                json_skip_ws(c, i);
+                let key = match json_parse_value(c, i)? {
+                    Json::Str(s) => s,
+                    _ => return Err("object key is not a string".to_string()),
+                };
+                json_skip_ws(c, i);
+                if c.get(*i) != Some(&':') {
+                    return Err("missing ':' in object".to_string());
+                }
+                *i += 1;
+                let val = json_parse_value(c, i)?;
+                items.push((key, val));
+                json_skip_ws(c, i);
+                match c.get(*i).copied() {
+                    Some(',') => *i += 1,
+                    Some('}') => {
+                        *i += 1;
+                        break;
+                    }
+                    _ => return Err("bad object syntax".to_string()),
+                }
+            }
+            Ok(Json::Obj(items))
+        }
+        '[' => {
+            *i += 1;
+            let mut items: Vec<Json> = Vec::new();
+            json_skip_ws(c, i);
+            if c.get(*i) == Some(&']') {
+                *i += 1;
+                return Ok(Json::Arr(items));
+            }
+            loop {
+                let val = json_parse_value(c, i)?;
+                items.push(val);
+                json_skip_ws(c, i);
+                match c.get(*i).copied() {
+                    Some(',') => *i += 1,
+                    Some(']') => {
+                        *i += 1;
+                        break;
+                    }
+                    _ => return Err("bad array syntax".to_string()),
+                }
+            }
+            Ok(Json::Arr(items))
+        }
+        '"' => {
+            *i += 1;
+            let mut out = String::new();
+            loop {
+                let ch = c.get(*i).copied().ok_or("unterminated string")?;
+                *i += 1;
+                match ch {
+                    '"' => break,
+                    '\\' => {
+                        let esc = c.get(*i).copied().ok_or("bad escape")?;
+                        *i += 1;
+                        match esc {
+                            '"' => out.push('"'),
+                            '\\' => out.push('\\'),
+                            '/' => out.push('/'),
+                            'b' => out.push('\u{0008}'),
+                            'f' => out.push('\u{000C}'),
+                            'n' => out.push('\n'),
+                            'r' => out.push('\r'),
+                            't' => out.push('\t'),
+                            'u' => {
+                                let hex: u32 = c[*i..*i + 4]
+                                    .iter()
+                                    .collect::<String>()
+                                    .parse()
+                                    .map_err(|_| "bad \\u escape")?;
+                                *i += 4;
+                                let cp = if (0xD800..0xDC00).contains(&hex) {
+                                    if c.get(*i) == Some(&'\\')
+                                        && c.get(*i + 1) == Some(&'u')
+                                    {
+                                        let hex2: u32 = c[*i + 2..*i + 6]
+                                            .iter()
+                                            .collect::<String>()
+                                            .parse()
+                                            .map_err(|_| "bad surrogate".to_string())?;
+                                        if (0xDC00..0xE000).contains(&hex2) {
+                                            *i += 6;
+                                            0x10000
+                                                + ((hex - 0xD800) << 10)
+                                                + (hex2 - 0xDC00)
+                                        } else {
+                                            0xFFFD
+                                        }
+                                    } else {
+                                        0xFFFD
+                                    }
+                                } else {
+                                    hex
+                                };
+                                out.push(char::from_u32(cp).unwrap_or('\u{FFFD}'));
+                            }
+                            _ => return Err("bad escape".to_string()),
+                        }
+                    }
+                    _ => out.push(ch),
+                }
+            }
+            Ok(Json::Str(out))
+        }
+        't' if c[*i..].starts_with(&['t', 'r', 'u', 'e']) => {
+            *i += 4;
+            Ok(Json::Bool(true))
+        }
+        'f' if c[*i..].starts_with(&['f', 'a', 'l', 's', 'e']) => {
+            *i += 5;
+            Ok(Json::Bool(false))
+        }
+        'n' if c[*i..].starts_with(&['n', 'u', 'l', 'l']) => {
+            *i += 4;
+            Ok(Json::Null)
+        }
+        _ => {
+            let start = *i;
+            while *i < c.len()
+                && matches!(c[*i], '-' | '+' | '.' | 'e' | 'E' | '0'..='9')
+            {
+                *i += 1;
+            }
+            let s: String = c[start..*i].iter().collect();
+            if s.is_empty() {
+                return Err("unexpected character".to_string());
+            }
+            s.parse::<f64>().map(Json::Num).map_err(|_| "bad number".to_string())
+        }
+    }
+}
+
+fn json_obj_get<'a>(o: &'a [ (String, Json) ], key: &str) -> Option<&'a Json> {
+    o.iter().find(|(k, _)| k == key).map(|(_, v)| v)
+}
+
+fn parse_json(text: &str) -> Result<Json, String> {
+    let c: Vec<char> = text.chars().collect();
+    let mut i = 0;
+    let v = json_parse_value(&c, &mut i)?;
+    Ok(v)
+}
+
+struct PriceEntry {
+    ids: Vec<String>,
+    input: f64,
+    output: f64,
+    cache_read: f64,
+}
+
+// Generic costs file schema (no tool or harness knowledge):
+//
+//   {
+//     "models": { "<name>": { "input": 0.44, "output": 1.32,
+//                              "cacheRead": 0.014 }, ... },
+//     "default": { "input": 1.74, "output": 3.48, "cacheRead": 0.145 }
+//   }
+
+// Prices are USD per million tokens. Missing fields read as 0.0.
+fn load_price_table(path: &str) -> Result<Vec<PriceEntry>, String> {
+    let text = std::fs::read_to_string(path).map_err(|e| format!("{path}: {e}"))?;
+    let root = parse_json(&text).map_err(|e| format!("{path}: {e}"))?;
+    let items = match &root {
+        Json::Obj(o) => o,
+        _ => return Err(format!("{path}: root is not an object")),
+    };
+    let num = |o: &[(String, Json)], k: &str| match json_obj_get(o, k) {
+        Some(Json::Num(n)) => *n,
+        _ => 0.0,
+    };
+    let mut out: Vec<PriceEntry> = Vec::new();
+    if let Some(Json::Obj(models)) = json_obj_get(items, "models") {
+        for (name, entry) in models {
+            let e = match entry {
+                Json::Obj(o) => o,
+                _ => continue,
+            };
+            out.push(PriceEntry {
+                ids: vec![name.clone()],
+                input: num(e, "input"),
+                output: num(e, "output"),
+                cache_read: num(e, "cacheRead"),
+            });
+        }
+    }
+    if let Some(Json::Obj(e)) = json_obj_get(items, "default") {
+        out.push(PriceEntry {
+            ids: vec!["default".to_string()],
+            input: num(e, "input"),
+            output: num(e, "output"),
+            cache_read: num(e, "cacheRead"),
+        });
+    }
+    if out.is_empty() {
+        return Err(format!("{path}: no model entries found"));
+    }
+    Ok(out)
+}
+
+fn default_entry(table: &[PriceEntry]) -> Option<&PriceEntry> {
+    table.iter().find(|e| e.ids.iter().any(|i| i == "default"))
+}
+
+fn norm_model(s: &str) -> String {
+    s.trim().trim_end_matches('/').to_string()
+}
+
+// A label and an id match when one is a full prefix of the other at a
+// '-' boundary. Longer overlap wins; ties go to the longer id.
+fn overlap_score(label: &str, cand: &str) -> usize {
+    let l = norm_model(label);
+    let c = norm_model(cand);
+    if l == c {
+        return 1 << 30;
+    }
+    if l.starts_with(&c) {
+        if c.is_empty() || l.as_bytes().get(c.len()) == Some(&b'-') {
+            return c.len();
+        }
+        return 0;
+    }
+    if c.starts_with(&l) {
+        if l.is_empty() || c.as_bytes().get(l.len()) == Some(&b'-') {
+            return l.len();
+        }
+    }
+    0
+}
+
+fn match_price<'a>(table: &'a [PriceEntry], label: &str) -> Option<&'a PriceEntry> {
+    let mut best: Option<(usize, usize, &PriceEntry)> = None;
+    for e in table {
+        let score = e
+            .ids
+            .iter()
+            .map(|id| overlap_score(label, id))
+            .max()
+            .unwrap_or(0);
+        if score == 0 {
+            continue;
+        }
+        let spec = e.ids.iter().map(|id| id.len()).max().unwrap_or(0);
+        match best {
+            Some((bs, bspec, _)) => {
+                if score > bs || (score == bs && spec > bspec) {
+                    best = Some((score, spec, e));
+                }
+            }
+            None => best = Some((score, spec, e)),
+        }
+    }
+    best.map(|(_, _, e)| e)
+}
+
+fn extract_model(labels: &str) -> String {
+    if let Some(p) = labels.find("model_name=\"") {
+        let rest = &labels[p + "model_name=\"".len()..];
+        let v = rest.split('"').next().unwrap_or("");
+        if !v.is_empty() {
+            return v.to_string();
+        }
+    }
+    "unknown".to_string()
+}
+
 // ---------- flags ----------
 
 fn collect<'a>(args: &[&'a str], key: &str) -> Vec<&'a str> {
@@ -356,6 +658,19 @@ struct Window {
     totals: BTreeMap<String, f64>,
 }
 
+struct ModelCost {
+    model: String,
+    prompt: f64,
+    cached: f64,
+    gen: f64,
+    reqs: f64,
+    matched: Option<String>,
+    input_price: f64,
+    output_price: f64,
+    cache_read_price: f64,
+    est_cost: f64,
+}
+
 struct EpSummary {
     endpoint: String,
     first_ts: Option<f64>,
@@ -367,7 +682,9 @@ struct EpSummary {
     grand: BTreeMap<String, f64>,
     hit_avg: Option<f64>,
     hit_latest: Option<f64>,
+    model_costs: Vec<ModelCost>,
     est_cost: f64,
+    costs_file: Option<String>,
 }
 
 fn endpoint_summary(
@@ -375,8 +692,10 @@ fn endpoint_summary(
     rows: &[(f64, String, String, f64, String)],
     wanted: &[String],
     meta: Option<&(f64, f64, u64, String)>,
-    input_price: f64,
-    output_price: f64,
+    price_table: Option<&[PriceEntry]>,
+    fb_in: f64,
+    fb_out: f64,
+    costs_file: Option<String>,
 ) -> EpSummary {
     let mut series: BTreeMap<(String, String), (Vec<f64>, Vec<f64>, String)> = BTreeMap::new();
     for (ts, name, labels, value, kind) in rows {
@@ -398,7 +717,9 @@ fn endpoint_summary(
             grand: BTreeMap::new(),
             hit_avg: None,
             hit_latest: None,
+            model_costs: Vec::new(),
             est_cost: 0.0,
+            costs_file,
         };
     }
     // A counter dropping means the engine restarted and the counter
@@ -426,9 +747,12 @@ fn endpoint_summary(
 
     let mut sessions: Vec<Window> = Vec::new();
     let mut grand: BTreeMap<String, f64> = BTreeMap::new();
+    // Per-model totals: prompt, cached, generation, requests.
+    let mut model_grand: BTreeMap<String, (f64, f64, f64, f64)> = BTreeMap::new();
     for (ws, we) in &windows {
         let mut tot: BTreeMap<String, f64> = BTreeMap::new();
-        for ((name, _), (ts, vals, _)) in &series {
+        let mut model_tot: BTreeMap<String, (f64, f64, f64, f64)> = BTreeMap::new();
+        for ((name, labels), (ts, vals, _)) in &series {
             if !wanted.iter().any(|m| m == name) {
                 continue;
             }
@@ -438,12 +762,35 @@ fn endpoint_summary(
                     last = Some(vals[i]);
                 }
             }
-            if let Some(v) = last {
-                *tot.entry(name.clone()).or_insert(0.0) += v;
+            let v = match last {
+                Some(v) => v,
+                None => continue,
+            };
+            *tot.entry(name.clone()).or_insert(0.0) += v;
+            match name.as_str() {
+                M_PROMPT | M_CACHED | M_GEN | M_REQ => {
+                    let model = extract_model(labels);
+                    let e = model_tot.entry(model).or_insert((0.0, 0.0, 0.0, 0.0));
+                    match name.as_str() {
+                        M_PROMPT => e.0 += v,
+                        M_CACHED => e.1 += v,
+                        M_GEN => e.2 += v,
+                        M_REQ => e.3 += v,
+                        _ => {}
+                    }
+                }
+                _ => {}
             }
         }
         for (k, v) in &tot {
             *grand.entry(k.clone()).or_insert(0.0) += v;
+        }
+        for (m, t) in &model_tot {
+            let e = model_grand.entry(m.clone()).or_insert((0.0, 0.0, 0.0, 0.0));
+            e.0 += t.0;
+            e.1 += t.1;
+            e.2 += t.2;
+            e.3 += t.3;
         }
         sessions.push(Window {
             start: *ws,
@@ -461,7 +808,43 @@ fn endpoint_summary(
 
     let prompt = grand.get(M_PROMPT).copied().unwrap_or(0.0);
     let gen = grand.get(M_GEN).copied().unwrap_or(0.0);
-    let est_cost = prompt / 1e6 * input_price + gen / 1e6 * output_price;
+    let cached = grand.get(M_CACHED).copied().unwrap_or(0.0);
+
+    // Per-model cost estimate. Cached prompt tokens bill at the
+    // cacheRead price. Cached counts can exceed the prompt total due
+    // to chunked-prefill re-counts, so clamp to the prompt total.
+    let mut model_costs: Vec<ModelCost> = Vec::new();
+    let mut est_cost = 0.0;
+    for (model, (p, c, g, rq)) in &model_grand {
+        let (p, c, g, rq) = (*p, *c, *g, *rq);
+        let matched = price_table
+            .and_then(|t| match_price(t, model))
+            .or_else(|| price_table.and_then(|t| default_entry(t)));
+        let (in_p, out_p, cr_p, mid) = match matched {
+            Some(e) => (e.input, e.output, e.cache_read, Some(e.ids[0].clone())),
+            None => (fb_in, fb_out, 0.0, None),
+        };
+        let cr = if cr_p > 0.0 { cr_p } else { in_p };
+        let uncached = (p - c).max(0.0);
+        let cached_billed = c.min(p);
+        let cost = uncached / 1e6 * in_p + cached_billed / 1e6 * cr + g / 1e6 * out_p;
+        est_cost += cost;
+        model_costs.push(ModelCost {
+            model: model.clone(),
+            prompt: p,
+            cached: c,
+            gen: g,
+            reqs: rq,
+            matched: mid,
+            input_price: in_p,
+            output_price: out_p,
+            cache_read_price: cr_p,
+            est_cost: cost,
+        });
+    }
+    if model_costs.is_empty() {
+        est_cost = (prompt - cached).max(0.0) / 1e6 * fb_in + cached.min(prompt) / 1e6 * fb_in + gen / 1e6 * fb_out;
+    }
 
     EpSummary {
         endpoint: ep.to_string(),
@@ -478,7 +861,9 @@ fn endpoint_summary(
             Some(hits.iter().sum::<f64>() / hits.len() as f64)
         },
         hit_latest: hits.last().copied(),
+        model_costs,
         est_cost,
+        costs_file,
     }
 }
 
@@ -633,6 +1018,14 @@ fn run_report_and_sessions(args: &[&str], sessions_only: bool) -> i32 {
     let input_price: f64 = opt(args, "--input-price").and_then(|s| s.parse().ok()).unwrap_or(3.0);
     let output_price: f64 = opt(args, "--output-price").and_then(|s| s.parse().ok()).unwrap_or(15.0);
     let as_json = args.iter().any(|a| *a == "--json");
+    let costs_file = opt(args, "--costs-file").map(|s| s.to_string());
+    let mut table: Option<Vec<PriceEntry>> = None;
+    if let Some(path) = &costs_file {
+        match load_price_table(path) {
+            Ok(t) => table = Some(t),
+            Err(e) => eprintln!("report: {e} (using fallback prices)"),
+        }
+    }
     let metrics: Vec<String> = match opt(args, "--metrics") {
         Some(m) => m.split(',').map(|x| x.trim().to_string()).filter(|x| !x.is_empty()).collect(),
         None => default_metrics(),
@@ -661,7 +1054,16 @@ fn run_report_and_sessions(args: &[&str], sessions_only: bool) -> i32 {
             Some(r) => r,
             None => &Vec::new(),
         };
-        summaries.push(endpoint_summary(ep, r, &metrics, meta.get(ep), input_price, output_price));
+        summaries.push(endpoint_summary(
+            ep,
+            r,
+            &metrics,
+            meta.get(ep),
+            table.as_deref(),
+            input_price,
+            output_price,
+            costs_file.clone(),
+        ));
     }
     if as_json {
         print!("{}", json_report(&summaries));
@@ -727,10 +1129,37 @@ fn run_report_and_sessions(args: &[&str], sessions_only: bool) -> i32 {
             ),
             _ => {}
         }
-        println!(
-            "  est. cloud API cost:      ${:.2}  (input ${:.2}/M, output ${:.2}/M)",
-            r.est_cost, input_price, output_price
-        );
+        if !r.model_costs.is_empty() {
+            println!("  by model:");
+            for m in &r.model_costs {
+                let mname = m
+                    .matched
+                    .as_deref()
+                    .map(|s| s.to_string())
+                    .unwrap_or_else(|| "default price".to_string());
+                println!("    {}  [{} in costs file]", m.model, mname);
+                println!(
+                    "      prompt={} cached={} gen={} reqs={}",
+                    fmt_int(m.prompt),
+                    fmt_int(m.cached),
+                    fmt_int(m.gen),
+                    fmt_int(m.reqs)
+                );
+                println!(
+                    "      prices: in ${:.3}/M  out ${:.3}/M  cache ${:.3}/M",
+                    m.input_price, m.output_price, m.cache_read_price
+                );
+                println!("      est. cost: ${:.2}", m.est_cost);
+            }
+        }
+        println!("  est. cloud API cost:      ${:.2}", r.est_cost);
+        match &r.costs_file {
+            Some(p) => println!("  prices from: {p}"),
+            None => println!(
+                "  prices: fallback (input ${:.2}/M, output ${:.2}/M); use --costs-file for per-model prices",
+                input_price, output_price
+            ),
+        }
         println!();
     }
     let tp: f64 = summaries
@@ -745,12 +1174,12 @@ fn run_report_and_sessions(args: &[&str], sessions_only: bool) -> i32 {
         .iter()
         .map(|r| r.grand.get(M_REQ).copied().unwrap_or(0.0))
         .sum();
-    let tsv: f64 = tp / 1e6 * input_price + tg / 1e6 * output_price;
+    let tcost: f64 = summaries.iter().map(|r| r.est_cost).sum();
     println!("Totals across {} endpoint(s):", summaries.len());
     println!("  prompt tokens:   {}", fmt_int(tp));
     println!("  generation:      {}", fmt_int(tg));
     println!("  requests:        {}", fmt_int(tr));
-    println!("  est. savings:    ${:.2}", tsv);
+    println!("  est. savings:    ${:.2}", tcost);
     0
 }
 
@@ -823,9 +1252,49 @@ fn json_report(summaries: &[EpSummary]) -> String {
         }
         s.push_str("\n    },\n");
         s.push_str(&format!(
-            "    \"cache_hit_rate\": {{\"avg\": {}, \"latest\": {}}}\n  }}",
+            "    \"cache_hit_rate\": {{\"avg\": {}, \"latest\": {}}},\n",
             r.hit_avg.map(|v| v.to_string()).unwrap_or_else(|| "null".into()),
             r.hit_latest.map(|v| v.to_string()).unwrap_or_else(|| "null".into())
+        ));
+        s.push_str("    \"by_model\": [\n");
+        for (j, m) in r.model_costs.iter().enumerate() {
+            if j > 0 {
+                s.push_str(",\n");
+            }
+            s.push_str("      {");
+            s.push_str(&format!(
+                "\"model\": \"{}\", ",
+                jesc(&m.model)
+            ));
+            s.push_str(&format!(
+                "\"matched\": {}, ",
+                m.matched
+                    .as_ref()
+                    .map(|x| format!("\"{}\"", jesc(x)))
+                    .unwrap_or_else(|| "null".into())
+            ));
+            s.push_str(&format!(
+                "\"prompt_tokens\": {}, \"cached_tokens\": {}, ",
+                m.prompt, m.cached
+            ));
+            s.push_str(&format!(
+                "\"generation_tokens\": {}, \"requests\": {}, ",
+                m.gen, m.reqs
+            ));
+            s.push_str(&format!(
+                "\"input_price\": {}, \"output_price\": {}, \"cache_read_price\": {}, ",
+                m.input_price, m.output_price, m.cache_read_price
+            ));
+            s.push_str(&format!("\"est_cost_usd\": {}", m.est_cost));
+            s.push_str("}");
+        }
+        s.push_str("\n    ],\n");
+        s.push_str(&format!(
+            "    \"costs_file\": {}\n  }}",
+            r.costs_file
+                .as_ref()
+                .map(|x| format!("\"{}\"", jesc(x)))
+                .unwrap_or_else(|| "null".into())
         ));
     }
     s.push_str("\n]\n");
@@ -840,7 +1309,7 @@ fn usage() {
     println!("  sglang-usage scrape --db PATH --endpoint HOST:PORT [--endpoint ...]");
     println!("      [--metrics a,b,c] [--timeout SECS]");
     println!("  sglang-usage report [--db PATH] [--input-price 3.0] [--output-price 15.0]");
-    println!("      [--metrics a,b,c] [--json]");
+    println!("      [--costs-file PATH] [--metrics a,b,c] [--json]");
     println!("  sglang-usage sessions [--db PATH]");
 }
 
