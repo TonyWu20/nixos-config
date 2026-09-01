@@ -77,7 +77,7 @@
   # local-serving savings accumulate in /var/lib/sglang-metrics.
   services.sglangMetrics = {
     enable = true;
-    endpoints = [ "127.0.0.1:30000" "127.0.0.1:31000" ];
+    endpoints = [ "127.0.0.1:30000" ];
   };
 
   system.stateVersion = "25.05";
