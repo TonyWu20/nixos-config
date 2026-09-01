@@ -12,11 +12,11 @@ The SGLang server config must set `enable-metrics: true`.
 ## Commands
 
 - `sglang-usage report` — cumulative totals, sessions, cache hit
-  rate, per-model costs, the current running and queued request
-  counts (`sglang:num_running_reqs` and `sglang:num_queue_reqs`,
-  latest scrape values with their local times), and the estimated
-  cloud API cost this local serving saved. The wrapper uses the
-  prices set in the Nix module.
+  rate, per-model costs split into peak and off-peak hours, the
+  current running and queued request counts (`sglang:num_running_reqs`
+  and `sglang:num_queue_reqs`, latest scrape values with their local
+  times), and the estimated cloud API cost this local serving saved.
+  The wrapper uses the prices set in the Nix module.
 
 - `sglang-usage sessions` — per-session breakdown (start, end,
   prompt tokens, generation tokens, requests, cached tokens).
@@ -32,12 +32,15 @@ The SGLang server config must set `enable-metrics: true`.
 
 - `--format text|json|yaml|toml` — output format. The text format is
   the default. Structured formats carry one entry per endpoint:
-  totals, sessions, per-model costs, cache hit rate, running and
-  queued requests (`running_requests` and `queued_requests`, each
-  with `latest`, `latest_ts`, and `latest_ts_local`), and the
-  estimated cloud cost. Timestamps are epoch seconds (`*_ts`) plus a
-  local time string (`*_ts_local`, e.g. `2025-11-15T06:13+08:00`).
-  TOML omits fields that are null.
+  totals, sessions, per-model costs (each with a `peak` and an
+  `offpeak` object holding the band token counts and band cost),
+  `est_cost_peak_usd` and `est_cost_offpeak_usd`, a `pricing` object
+  naming the peak window and the off-peak price factor, cache hit
+  rate, running and queued requests (`running_requests` and
+  `queued_requests`, each with `latest`, `latest_ts`, and
+  `latest_ts_local`), and the estimated cloud cost. Timestamps are
+  epoch seconds (`*_ts`) plus a local time string (`*_ts_local`,
+  e.g. `2025-11-15T06:13+08:00`). TOML omits fields that are null.
 
 - `--costs-file PATH` — JSON file with per-model prices (see below).
   The Nix wrapper passes the `costsFile` option automatically.
@@ -115,7 +118,8 @@ file the module writes from `costs`.
 
 `costs.default` prices models that no `costs.models` entry matches.
 It also feeds the `--input-price`/`--output-price` fallback of the
-report wrapper.
+report wrapper. All prices in the table are peak prices. The report
+bills off-peak hours at half price.
 
 ## Data format
 
@@ -144,7 +148,15 @@ Data lands in `/var/lib/sglang-metrics/usage.tsv`.
 
 ## Cost estimate
 
-Per model, the report computes:
+The prices in the costs table are peak prices. For the local
+`Qwen3.8-27B-NVFP4-RTX5090` setup they are the peak-hour prices of
+`deepseek-v4-flash`. Peak hours are Monday through Friday,
+01:00-04:00 and 06:00-10:00 UTC. Outside the peak window, all prices
+bill at half the peak price.
+
+The report splits the token delta between two scrapes into the part
+that falls inside peak hours and the part that falls outside, using
+the UTC timestamps in the TSV. Per model, per band:
 
 ```
 cost = uncached_prompt/1e6 * input
@@ -154,9 +166,15 @@ cost = uncached_prompt/1e6 * input
 
 `uncached_prompt` is `prompt_tokens - cached_tokens`, clamped at 0.
 `cached_prompt` is clamped at the prompt total, because chunked
-prefill can count some tokens in both counters. The per-model costs
-sum to the "est. cloud API cost" line.
+prefill can count some tokens in both counters. The off-peak band is
+the same formula with every price halved. The per-model peak and
+off-peak costs sum to the "est. cloud API cost" line.
 
-It is a rough guide. Set the `costs` option to the real prices of the
-cloud API you replace. Tokens processed while the timer was not
-running (at most one interval) are not counted.
+Per-model token totals are delta based: the true counts since each
+counter reset. The endpoint totals use the last stored value of each
+session. When a counter does not reset at a session boundary (a
+second engine instance keeps running), the two can differ slightly.
+
+It is a rough guide. Set the `costs` option to the real peak prices
+of the cloud API you replace. Tokens processed while the timer was
+not running (at most one interval) are not counted.

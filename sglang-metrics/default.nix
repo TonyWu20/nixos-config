@@ -117,10 +117,13 @@ in
         default = { input = 3.0; output = 15.0; cacheRead = 0.3; };
       };
       description = ''
-        Per-model prices in USD per 1M tokens. `models` is a list of
-        `{ id, input, output, cacheRead? }`; `default` prices the
-        models the list does not match. The module writes this table
-        to the file named by `costsFile` at activation.
+        Per-model PEAK prices in USD per 1M tokens. `models` is a
+        list of `{ id, input, output, cacheRead? }`; `default`
+        prices the models the list does not match. The module writes
+        this table to the file named by `costsFile` at activation.
+        The report treats these prices as peak prices. It bills the
+        off-peak hours (everything outside Mon-Fri 01:00-04:00 and
+        06:00-10:00 UTC) at 50% of the peak price.
       '';
     };
   };

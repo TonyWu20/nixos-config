@@ -41,6 +41,14 @@ const M_HIT: &str = "sglang:cache_hit_rate";
 const M_RUNNING: &str = "sglang:num_running_reqs";
 const M_QUEUE: &str = "sglang:num_queue_reqs";
 
+// Peak-hour pricing. The prices in the costs table are peak prices.
+// The peak window is Monday through Friday, 01:00-04:00 and
+// 06:00-10:00 UTC. Outside the window, all prices bill at 50% of
+// the peak price.
+const PEAK_HOURS: [u32; 7] = [1, 2, 3, 6, 7, 8, 9];
+const OFFPEAK_PRICE_FACTOR: f64 = 0.5;
+const PEAK_HOURS_DESC: &str = "Mon-Fri 01:00-04:00 and 06:00-10:00 UTC";
+
 // ---------- CLI (clap) ----------
 
 #[derive(Parser)]
@@ -747,6 +755,16 @@ struct Window {
     totals: BTreeMap<String, f64>,
 }
 
+// Token counts and estimated cost for one price band (peak or
+// off-peak) of one model.
+#[derive(Debug, Default, Clone, Copy)]
+struct Band {
+    prompt: f64,
+    cached: f64,
+    gen: f64,
+    reqs: f64,
+}
+
 struct ModelCost {
     model: String,
     prompt: f64,
@@ -757,7 +775,23 @@ struct ModelCost {
     input_price: f64,
     output_price: f64,
     cache_read_price: f64,
+    peak: Band,
+    offpeak: Band,
+    peak_cost: f64,
+    offpeak_cost: f64,
     est_cost: f64,
+}
+
+// Price one band of one model at its peak prices. The off-peak
+// band passes OFFPEAK_PRICE_FACTOR, so its tokens bill at half
+// price. A missing cacheRead price bills cached tokens at the
+// input price. Cached counts can exceed the prompt total because
+// chunked prefill re-counts tokens, so clamp them.
+fn band_cost(b: &Band, in_p: f64, out_p: f64, cr_p: f64, factor: f64) -> f64 {
+    let cr = if cr_p > 0.0 { cr_p } else { in_p };
+    let uncached = (b.prompt - b.cached).max(0.0);
+    let cached_billed = b.cached.min(b.prompt);
+    (uncached / 1e6 * in_p + cached_billed / 1e6 * cr + b.gen / 1e6 * out_p) * factor
 }
 
 struct EpSummary {
@@ -780,6 +814,8 @@ struct EpSummary {
     queued_latest_ts: Option<f64>,
     model_costs: Vec<ModelCost>,
     est_cost: f64,
+    est_cost_peak: f64,
+    est_cost_offpeak: f64,
     costs_file: Option<String>,
 }
 
@@ -819,6 +855,8 @@ fn endpoint_summary(
             queued_latest_ts: None,
             model_costs: Vec::new(),
             est_cost: 0.0,
+            est_cost_peak: 0.0,
+            est_cost_offpeak: 0.0,
             costs_file,
         };
     }
@@ -847,12 +885,12 @@ fn endpoint_summary(
 
     let mut sessions: Vec<Window> = Vec::new();
     let mut grand: BTreeMap<String, f64> = BTreeMap::new();
-    // Per-model totals: prompt, cached, generation, requests.
-    let mut model_grand: BTreeMap<String, (f64, f64, f64, f64)> = BTreeMap::new();
+    // Per-model totals, split by price band: [0] = peak hours,
+    // [1] = off-peak hours.
+    let mut model_grand: BTreeMap<String, [Band; 2]> = BTreeMap::new();
     for (ws, we) in &windows {
         let mut tot: BTreeMap<String, f64> = BTreeMap::new();
-        let mut model_tot: BTreeMap<String, (f64, f64, f64, f64)> = BTreeMap::new();
-        for ((name, labels), (ts, vals, _)) in &series {
+        for ((name, _labels), (ts, vals, _)) in &series {
             if !wanted.iter().any(|m| m == name) {
                 continue;
             }
@@ -867,36 +905,70 @@ fn endpoint_summary(
                 None => continue,
             };
             *tot.entry(name.clone()).or_insert(0.0) += v;
-            match name.as_str() {
-                M_PROMPT | M_CACHED | M_GEN | M_REQ => {
-                    let model = extract_model(labels);
-                    let e = model_tot.entry(model).or_insert((0.0, 0.0, 0.0, 0.0));
-                    match name.as_str() {
-                        M_PROMPT => e.0 += v,
-                        M_CACHED => e.1 += v,
-                        M_GEN => e.2 += v,
-                        M_REQ => e.3 += v,
-                        _ => {}
-                    }
-                }
-                _ => {}
-            }
         }
         for (k, v) in &tot {
             *grand.entry(k.clone()).or_insert(0.0) += v;
-        }
-        for (m, t) in &model_tot {
-            let e = model_grand.entry(m.clone()).or_insert((0.0, 0.0, 0.0, 0.0));
-            e.0 += t.0;
-            e.1 += t.1;
-            e.2 += t.2;
-            e.3 += t.3;
         }
         sessions.push(Window {
             start: *ws,
             end: *we,
             totals: tot,
         });
+    }
+
+    // Per-model peak/off-peak split. The token delta between two
+    // scrapes of a counter falls in the UTC interval between them.
+    // Split that interval by the peak window, and charge each part
+    // at its price. A counter reset (a session boundary) means the
+    // new value covers everything since the reset, so charge the
+    // whole value over the interval since the previous scrape.
+    for ((name, labels), (ts, vals, _kind)) in &series {
+        let is_cost_metric = matches!(name.as_str(), M_PROMPT | M_CACHED | M_GEN | M_REQ);
+        if !is_cost_metric || !wanted.iter().any(|m| m == name) {
+            continue;
+        }
+        let model = extract_model(labels);
+        let bands = model_grand.entry(model).or_default();
+        let mut prev_ts: Option<f64> = None;
+        let mut prev_val = 0.0;
+        for i in 0..ts.len() {
+            let t = ts[i];
+            let v = vals[i];
+            let lo = prev_ts.unwrap_or(t);
+            let delta = if prev_ts.is_some() && v < prev_val {
+                v.max(0.0)
+            } else {
+                (v - prev_val).max(0.0)
+            };
+            prev_ts = Some(t);
+            prev_val = v;
+            if delta == 0.0 {
+                continue;
+            }
+            let frac = peak_fraction(lo, t);
+            let (pk_slice, ok_slice) = bands.split_at_mut(1);
+            let pk = &mut pk_slice[0];
+            let ok = &mut ok_slice[0];
+            match name.as_str() {
+                M_PROMPT => {
+                    pk.prompt += delta * frac;
+                    ok.prompt += delta * (1.0 - frac);
+                }
+                M_CACHED => {
+                    pk.cached += delta * frac;
+                    ok.cached += delta * (1.0 - frac);
+                }
+                M_GEN => {
+                    pk.gen += delta * frac;
+                    ok.gen += delta * (1.0 - frac);
+                }
+                M_REQ => {
+                    pk.reqs += delta * frac;
+                    ok.reqs += delta * (1.0 - frac);
+                }
+                _ => {}
+            }
+        }
     }
 
     let mut hits: Vec<f64> = Vec::new();
@@ -922,13 +994,17 @@ fn endpoint_summary(
     let gen = grand.get(M_GEN).copied().unwrap_or(0.0);
     let cached = grand.get(M_CACHED).copied().unwrap_or(0.0);
 
-    // Per-model cost estimate. Cached prompt tokens bill at the
-    // cacheRead price. Cached counts can exceed the prompt total due
-    // to chunked-prefill re-counts, so clamp to the prompt total.
+    // Per-model cost estimate. Each band bills at its prices; the
+    // off-peak band bills at half price.
     let mut model_costs: Vec<ModelCost> = Vec::new();
     let mut est_cost = 0.0;
-    for (model, (p, c, g, rq)) in &model_grand {
-        let (p, c, g, rq) = (*p, *c, *g, *rq);
+    let mut est_cost_peak = 0.0;
+    let mut est_cost_offpeak = 0.0;
+    for (model, bands) in &model_grand {
+        let p = bands[0].prompt + bands[1].prompt;
+        let c = bands[0].cached + bands[1].cached;
+        let g = bands[0].gen + bands[1].gen;
+        let rq = bands[0].reqs + bands[1].reqs;
         let matched = price_table
             .and_then(|t| match_price(t, model))
             .or_else(|| price_table.and_then(|t| default_entry(t)));
@@ -936,11 +1012,12 @@ fn endpoint_summary(
             Some(e) => (e.input, e.output, e.cache_read, Some(e.ids[0].clone())),
             None => (fb_in, fb_out, 0.0, None),
         };
-        let cr = if cr_p > 0.0 { cr_p } else { in_p };
-        let uncached = (p - c).max(0.0);
-        let cached_billed = c.min(p);
-        let cost = uncached / 1e6 * in_p + cached_billed / 1e6 * cr + g / 1e6 * out_p;
+        let peak_cost = band_cost(&bands[0], in_p, out_p, cr_p, 1.0);
+        let offpeak_cost = band_cost(&bands[1], in_p, out_p, cr_p, OFFPEAK_PRICE_FACTOR);
+        let cost = peak_cost + offpeak_cost;
         est_cost += cost;
+        est_cost_peak += peak_cost;
+        est_cost_offpeak += offpeak_cost;
         model_costs.push(ModelCost {
             model: model.clone(),
             prompt: p,
@@ -951,6 +1028,10 @@ fn endpoint_summary(
             input_price: in_p,
             output_price: out_p,
             cache_read_price: cr_p,
+            peak: bands[0],
+            offpeak: bands[1],
+            peak_cost,
+            offpeak_cost,
             est_cost: cost,
         });
     }
@@ -979,6 +1060,8 @@ fn endpoint_summary(
         queued_latest_ts,
         model_costs,
         est_cost,
+        est_cost_peak,
+        est_cost_offpeak,
         costs_file,
     }
 }
@@ -1123,6 +1206,60 @@ fn civil_from_days(z0: i64) -> (i64, u32, u32) {
     let m = if m < 10 { m + 3 } else { m - 9 };
     let y = if m <= 2 { y + 1 } else { y };
     (y, m as u32, d as u32)
+}
+
+// ---------- peak-hour window ----------
+
+// Day 0 is 1970-01-01, a Thursday. Weekdays are Monday through
+// Friday.
+fn is_peak_weekday(day: i64) -> bool {
+    // (day + 4) % 7 indexes Sunday=0 through Saturday=6.
+    (1..=5).contains(&((day + 4).rem_euclid(7)))
+}
+
+// UTC seconds inside the peak window between a and b, with b > a.
+fn peak_seconds_between(a: i64, b: i64) -> i64 {
+    if b <= a {
+        return 0;
+    }
+    let mut total = 0i64;
+    let day_a = a.div_euclid(86400);
+    let day_b = b.div_euclid(86400);
+    for day in day_a..=day_b {
+        let day_start = day * 86400;
+        let lo = a.max(day_start);
+        let hi = b.min(day_start + 86400);
+        if lo >= hi || !is_peak_weekday(day) {
+            continue;
+        }
+        for h in PEAK_HOURS {
+            let hs = day_start + (h as i64) * 3600;
+            let he = hs + 3600;
+            let secs = hi.min(he) - lo.max(hs);
+            if secs > 0 {
+                total += secs;
+            }
+        }
+    }
+    total
+}
+
+fn is_peak_instant(ts: f64) -> bool {
+    let t = ts as i64;
+    let hour = (t.rem_euclid(86400) / 3600) as u32;
+    is_peak_weekday(t.div_euclid(86400)) && PEAK_HOURS.contains(&hour)
+}
+
+// Fraction of the interval (lo, hi] that falls inside the peak
+// window. A zero-length interval classifies by its instant.
+fn peak_fraction(lo: f64, hi: f64) -> f64 {
+    if hi <= lo {
+        return if is_peak_instant(hi) { 1.0 } else { 0.0 };
+    }
+    let a = lo as i64;
+    let b = hi as i64;
+    let secs = (b - a).max(1) as f64;
+    peak_seconds_between(a, b) as f64 / secs
 }
 
 fn fmt_int(v: f64) -> String {
@@ -1374,10 +1511,33 @@ fn run_report_and_sessions(args: &ReportArgs, sessions_only: bool) -> i32 {
                     "      prices: in ${:.3}/M  out ${:.3}/M  cache ${:.3}/M",
                     m.input_price, m.output_price, m.cache_read_price
                 );
-                println!("      est. cost: ${:.2}", m.est_cost);
+                println!(
+                    "      peak hours ({}): in={} cached={} out={} reqs={}  est. ${:.2}",
+                    PEAK_HOURS_DESC,
+                    fmt_int(m.peak.prompt),
+                    fmt_int(m.peak.cached),
+                    fmt_int(m.peak.gen),
+                    fmt_int(m.peak.reqs),
+                    m.peak_cost
+                );
+                println!(
+                    "      off-peak hours (half price): in={} cached={} out={} reqs={}  est. ${:.2}",
+                    fmt_int(m.offpeak.prompt),
+                    fmt_int(m.offpeak.cached),
+                    fmt_int(m.offpeak.gen),
+                    fmt_int(m.offpeak.reqs),
+                    m.offpeak_cost
+                );
+                println!(
+                    "      est. cost: ${:.2}  (peak ${:.2} + off-peak ${:.2})",
+                    m.est_cost, m.peak_cost, m.offpeak_cost
+                );
             }
         }
-        println!("  est. cloud API cost:      ${:.2}", r.est_cost);
+        println!(
+            "  est. cloud API cost:      ${:.2}  (peak ${:.2} + off-peak ${:.2})",
+            r.est_cost, r.est_cost_peak, r.est_cost_offpeak
+        );
         match &r.costs_file {
             Some(p) => println!("  prices from: {p}"),
             None => println!(
@@ -1400,6 +1560,8 @@ fn run_report_and_sessions(args: &ReportArgs, sessions_only: bool) -> i32 {
         .map(|r| r.grand.get(M_REQ).copied().unwrap_or(0.0))
         .sum();
     let tcost: f64 = summaries.iter().map(|r| r.est_cost).sum();
+    let tcost_peak: f64 = summaries.iter().map(|r| r.est_cost_peak).sum();
+    let tcost_offpeak: f64 = summaries.iter().map(|r| r.est_cost_offpeak).sum();
     let trunning: Option<f64> = if summaries.iter().any(|r| r.running_latest.is_some()) {
         Some(summaries.iter().filter_map(|r| r.running_latest).sum())
     } else {
@@ -1420,7 +1582,10 @@ fn run_report_and_sessions(args: &ReportArgs, sessions_only: bool) -> i32 {
     if let Some(v) = tqueued {
         println!("  queued requests:   {}  (sum of latest per endpoint)", fmt_int(v));
     }
-    println!("  est. savings:    ${:.2}", tcost);
+    println!(
+        "  est. savings:    ${:.2}  (peak ${:.2} + off-peak ${:.2})",
+        tcost, tcost_peak, tcost_offpeak
+    );
     0
 }
 
@@ -1481,6 +1646,19 @@ fn json_report(summaries: &[EpSummary]) -> String {
         s.push_str(&format!(
             "    \"est_cost_usd\": {},\n",
             r.est_cost
+        ));
+        s.push_str(&format!(
+            "    \"est_cost_peak_usd\": {},\n",
+            r.est_cost_peak
+        ));
+        s.push_str(&format!(
+            "    \"est_cost_offpeak_usd\": {},\n",
+            r.est_cost_offpeak
+        ));
+        s.push_str(&format!(
+            "    \"pricing\": {{\"peak_hours\": \"{}\", \"offpeak_price_factor\": {}}},\n",
+            jesc(PEAK_HOURS_DESC),
+            OFFPEAK_PRICE_FACTOR
         ));
         s.push_str("    \"sessions\": [\n");
         for (j, win) in r.sessions.iter().enumerate() {
@@ -1583,6 +1761,14 @@ fn json_report(summaries: &[EpSummary]) -> String {
                 "\"input_price\": {}, \"output_price\": {}, \"cache_read_price\": {}, ",
                 m.input_price, m.output_price, m.cache_read_price
             ));
+            s.push_str(&format!(
+                "\"peak\": {{\"prompt_tokens\": {}, \"cached_tokens\": {}, \"generation_tokens\": {}, \"requests\": {}, \"est_cost_usd\": {}}}, ",
+                m.peak.prompt, m.peak.cached, m.peak.gen, m.peak.reqs, m.peak_cost
+            ));
+            s.push_str(&format!(
+                "\"offpeak\": {{\"prompt_tokens\": {}, \"cached_tokens\": {}, \"generation_tokens\": {}, \"requests\": {}, \"est_cost_usd\": {}}}, ",
+                m.offpeak.prompt, m.offpeak.cached, m.offpeak.gen, m.offpeak.reqs, m.offpeak_cost
+            ));
             s.push_str(&format!("\"est_cost_usd\": {}", m.est_cost));
             s.push_str("}");
         }
@@ -1648,6 +1834,19 @@ fn yaml_endpoint(r: &EpSummary) -> String {
     s.push_str(&format!("{i}scrape_count: {}\n", r.scrape_count));
     s.push_str(&format!("{i}last_status: {}\n", y_s(&r.last_status)));
     s.push_str(&format!("{i}est_cost_usd: {}\n", r.est_cost));
+    s.push_str(&format!(
+        "{i}est_cost_peak_usd: {}\n",
+        r.est_cost_peak
+    ));
+    s.push_str(&format!(
+        "{i}est_cost_offpeak_usd: {}\n",
+        r.est_cost_offpeak
+    ));
+    s.push_str(&format!(
+        "{i}pricing:\n{j}peak_hours: {}\n{j}offpeak_price_factor: {}\n",
+        y_s(PEAK_HOURS_DESC),
+        OFFPEAK_PRICE_FACTOR
+    ));
     s.push_str(&format!(
         "{i}costs_file: {}\n",
         y_s_opt(r.costs_file.clone())
@@ -1734,6 +1933,22 @@ fn yaml_endpoint(r: &EpSummary) -> String {
                 "{j}  cache_read_price: {}\n",
                 mc.cache_read_price
             ));
+            s.push_str(&format!(
+                "{j}  peak:\n{m}prompt_tokens: {}\n{m}cached_tokens: {}\n{m}generation_tokens: {}\n{m}requests: {}\n{m}est_cost_usd: {}\n",
+                mc.peak.prompt,
+                mc.peak.cached,
+                mc.peak.gen,
+                mc.peak.reqs,
+                mc.peak_cost
+            ));
+            s.push_str(&format!(
+                "{j}  offpeak:\n{m}prompt_tokens: {}\n{m}cached_tokens: {}\n{m}generation_tokens: {}\n{m}requests: {}\n{m}est_cost_usd: {}\n",
+                mc.offpeak.prompt,
+                mc.offpeak.cached,
+                mc.offpeak.gen,
+                mc.offpeak.reqs,
+                mc.offpeak_cost
+            ));
             s.push_str(&format!("{j}  est_cost_usd: {}\n", mc.est_cost));
         }
     }
@@ -1798,7 +2013,21 @@ fn toml_endpoint(r: &EpSummary) -> String {
         t_s(&r.last_status)
     ));
     s.push_str(&format!("est_cost_usd = {}\n", t_f(r.est_cost)));
+    s.push_str(&format!(
+        "est_cost_peak_usd = {}\n",
+        t_f(r.est_cost_peak)
+    ));
+    s.push_str(&format!(
+        "est_cost_offpeak_usd = {}\n",
+        t_f(r.est_cost_offpeak)
+    ));
     t_s_opt(&mut s, "costs_file", r.costs_file.clone());
+    s.push_str("[endpoints.pricing]\n");
+    s.push_str(&format!("peak_hours = {}\n", t_s(PEAK_HOURS_DESC)));
+    s.push_str(&format!(
+        "offpeak_price_factor = {}\n",
+        t_f(OFFPEAK_PRICE_FACTOR)
+    ));
 
     if r.sessions.is_empty() {
         s.push_str("sessions = []\n");
@@ -1838,6 +2067,24 @@ fn toml_endpoint(r: &EpSummary) -> String {
                 t_f(mc.cache_read_price)
             ));
             s.push_str(&format!("est_cost_usd = {}\n", t_f(mc.est_cost)));
+            s.push_str("[endpoints.by_model.peak]\n");
+            s.push_str(&format!("prompt_tokens = {}\n", t_f(mc.peak.prompt)));
+            s.push_str(&format!("cached_tokens = {}\n", t_f(mc.peak.cached)));
+            s.push_str(&format!(
+                "generation_tokens = {}\n",
+                t_f(mc.peak.gen)
+            ));
+            s.push_str(&format!("requests = {}\n", t_f(mc.peak.reqs)));
+            s.push_str(&format!("est_cost_usd = {}\n", t_f(mc.peak_cost)));
+            s.push_str("[endpoints.by_model.offpeak]\n");
+            s.push_str(&format!("prompt_tokens = {}\n", t_f(mc.offpeak.prompt)));
+            s.push_str(&format!("cached_tokens = {}\n", t_f(mc.offpeak.cached)));
+            s.push_str(&format!(
+                "generation_tokens = {}\n",
+                t_f(mc.offpeak.gen)
+            ));
+            s.push_str(&format!("requests = {}\n", t_f(mc.offpeak.reqs)));
+            s.push_str(&format!("est_cost_usd = {}\n", t_f(mc.offpeak_cost)));
         }
         s.push('\n');
     }
@@ -1882,4 +2129,112 @@ fn main() {
         Cmd::Sessions(a) => run_report_and_sessions(&a, true),
     };
     std::process::exit(code);
+}
+
+// ---------- tests ----------
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // 2026-08-31 is a Monday. Its UTC day index is 20696.
+    const MON: i64 = 20696;
+
+    #[test]
+    fn peak_weekday_boundaries() {
+        // 1970-01-01 (day 0) was a Thursday.
+        assert!(is_peak_weekday(0));
+        assert!(is_peak_weekday(MON)); // 2026-08-31 Monday
+        assert!(is_peak_weekday(MON + 4)); // 2026-09-04 Friday
+        assert!(!is_peak_weekday(MON + 5)); // 2026-09-05 Saturday
+        assert!(!is_peak_weekday(MON + 6)); // 2026-09-06 Sunday
+    }
+
+    #[test]
+    fn peak_seconds_full_weekday_day() {
+        let ds = MON * 86400;
+        // 7 peak hours per weekday: 01-04 and 06-10 UTC.
+        assert_eq!(peak_seconds_between(ds, ds + 86400), 7 * 3600);
+        // A whole weekend day has no peak seconds.
+        let sat = (MON + 5) * 86400;
+        assert_eq!(peak_seconds_between(sat, sat + 86400), 0);
+        // Equal or reversed intervals carry no seconds.
+        assert_eq!(peak_seconds_between(ds, ds), 0);
+        assert_eq!(peak_seconds_between(ds + 10, ds), 0);
+    }
+
+    #[test]
+    fn peak_seconds_boundaries() {
+        let ds = MON * 86400;
+        // 00:59 -> 01:01 overlaps the peak window for 60 s.
+        assert_eq!(peak_seconds_between(ds + 3540, ds + 3660), 60);
+        // 03:58 -> 04:02 overlaps it for 120 s.
+        assert_eq!(peak_seconds_between(ds + 14280, ds + 14520), 120);
+        // 05:58 -> 06:02 overlaps it for 120 s.
+        assert_eq!(peak_seconds_between(ds + 21480, ds + 21720), 120);
+        // 09:58 -> 10:02 overlaps it for 120 s.
+        assert_eq!(peak_seconds_between(ds + 35880, ds + 36120), 120);
+        // 10:00 -> 10:01 is fully off-peak.
+        assert_eq!(peak_seconds_between(ds + 36000, ds + 36060), 0);
+        // Friday 09:59 -> Saturday 01:01 keeps only the 60 s of
+        // Friday inside the window.
+        let fri = (MON + 4) * 86400;
+        assert_eq!(peak_seconds_between(fri + 35940, fri + 36000 + 3660), 60);
+    }
+
+    #[test]
+    fn peak_fraction_cases() {
+        let ds = MON as f64 * 86400.0;
+        // Half of 00:59 -> 01:01 is peak.
+        assert!((peak_fraction(ds + 3540.0, ds + 3660.0) - 0.5).abs() < 1e-9);
+        // A full peak hour is all peak.
+        assert!((peak_fraction(ds + 7200.0, ds + 10800.0) - 1.0).abs() < 1e-9);
+        // A full off-peak hour has no peak.
+        assert!(peak_fraction(ds + 14400.0, ds + 18000.0) < 1e-9);
+        // Zero-length intervals classify by their instant.
+        assert_eq!(peak_fraction(ds + 7200.0, ds + 7200.0), 1.0);
+        assert_eq!(peak_fraction(ds + 18000.0, ds + 18000.0), 0.0);
+    }
+
+    #[test]
+    fn peak_split_of_token_deltas() {
+        // Monday 2026-08-31 UTC. base is 00:00 of that day.
+        let base = MON as f64 * 86400.0;
+        let labels = r#"model_name="test-model""#.to_string();
+        let row = |ts: f64, v: f64| (ts, M_PROMPT.to_string(), labels.clone(), v, "counter".to_string());
+        let rows = vec![
+            // 02:00 UTC, peak. First sample of the db: its value is
+            // charged at the 02:00 instant, which is peak.
+            row(base + 7200.0, 1_000_000.0),
+            // 05:00 UTC, off-peak. Delta 2e6 spans 02:00-05:00.
+            // Peak share: 02:00-04:00 of 02:00-05:00, so 2/3.
+            row(base + 18000.0, 3_000_000.0),
+            // 07:00 UTC, peak. Delta 1e6 spans 05:00-07:00; peak
+            // share: 06:00-07:00 of 2 hours, so 1/2.
+            row(base + 25200.0, 4_000_000.0),
+            // 09:00 UTC, peak. Counter resets to 500 between 07:00
+            // and 09:00. The whole value 500 charges over 07:00-09:00,
+            // which is fully peak.
+            row(base + 32400.0, 500.0),
+        ];
+        let wanted = vec![M_PROMPT.to_string()];
+        let s = endpoint_summary("ep", &rows, &wanted, None, None, 1.0, 2.0, None);
+        assert_eq!(s.session_count, 2);
+        let m = &s.model_costs;
+        assert_eq!(m.len(), 1);
+        let m = &m[0];
+        // Total prompt equals the summed session values.
+        assert!((m.prompt - (4_000_000.0 + 500.0)).abs() < 1e-6);
+        let peak_prompt = 1_000_000.0 + (2_000_000.0 * 2.0 / 3.0) + 500_000.0 + 500.0;
+        let offpeak_prompt = 2_000_000.0 / 3.0 + 500_000.0;
+        assert!((m.peak.prompt - peak_prompt).abs() < 1e-3);
+        assert!((m.offpeak.prompt - offpeak_prompt).abs() < 1e-3);
+        // No cached or generation deltas: cost is prompt only.
+        assert!((m.peak_cost - peak_prompt / 1e6).abs() < 1e-6);
+        assert!((m.offpeak_cost - offpeak_prompt / 1e6 * OFFPEAK_PRICE_FACTOR).abs() < 1e-6);
+        assert!((m.est_cost - (m.peak_cost + m.offpeak_cost)).abs() < 1e-9);
+        assert!((s.est_cost_peak - m.peak_cost).abs() < 1e-9);
+        assert!((s.est_cost_offpeak - m.offpeak_cost).abs() < 1e-9);
+        assert!((s.est_cost - m.est_cost).abs() < 1e-9);
+    }
 }
