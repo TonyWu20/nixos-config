@@ -12,8 +12,11 @@ The SGLang server config must set `enable-metrics: true`.
 ## Commands
 
 - `sglang-usage report` — cumulative totals, sessions, cache hit
-  rate, per-model costs, and the estimated cloud API cost this local
-  serving saved. The wrapper uses the prices set in the Nix module.
+  rate, per-model costs, the current running and queued request
+  counts (`sglang:num_running_reqs` and `sglang:num_queue_reqs`,
+  latest scrape values with their local times), and the estimated
+  cloud API cost this local serving saved. The wrapper uses the
+  prices set in the Nix module.
 
 - `sglang-usage sessions` — per-session breakdown (start, end,
   prompt tokens, generation tokens, requests, cached tokens).
@@ -29,7 +32,9 @@ The SGLang server config must set `enable-metrics: true`.
 
 - `--format text|json|yaml|toml` — output format. The text format is
   the default. Structured formats carry one entry per endpoint:
-  totals, sessions, per-model costs, cache hit rate, and the
+  totals, sessions, per-model costs, cache hit rate, running and
+  queued requests (`running_requests` and `queued_requests`, each
+  with `latest`, `latest_ts`, and `latest_ts_local`), and the
   estimated cloud cost. Timestamps are epoch seconds (`*_ts`) plus a
   local time string (`*_ts_local`, e.g. `2025-11-15T06:13+08:00`).
   TOML omits fields that are null.
@@ -92,7 +97,7 @@ Set them in `nixos-pro5000/configuration.nix`:
 ```
 services.sglangMetrics = {
   enable = true;
-  endpoints = [ "127.0.0.1:30000" "127.0.0.1:31000" ];
+  endpoints = [ "127.0.0.1:30000" ];
   intervalMins = 5;
   # Per-model prices, USD per 1M tokens. The module writes this table
   # to /etc/sglang-metrics/costs.json at activation.

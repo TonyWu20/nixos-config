@@ -82,6 +82,8 @@ in
         "sglang:realtime_tokens_total"
         "sglang:backuped_tokens_total"
         "sglang:cache_hit_rate"
+        "sglang:num_running_reqs"
+        "sglang:num_queue_reqs"
       ];
       description = "Metric names to persist on every scrape.";
     };

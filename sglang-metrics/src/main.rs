@@ -21,7 +21,7 @@ use clap::{Args, Parser, Subcommand, ValueEnum, ValueHint};
 
 const DEFAULT_DB: &str = "/var/lib/sglang-metrics/usage.tsv";
 
-const DEFAULT_METRICS: [&str; 7] = [
+const DEFAULT_METRICS: [&str; 9] = [
     "sglang:prompt_tokens_total",
     "sglang:generation_tokens_total",
     "sglang:num_requests_total",
@@ -29,6 +29,8 @@ const DEFAULT_METRICS: [&str; 7] = [
     "sglang:realtime_tokens_total",
     "sglang:backuped_tokens_total",
     "sglang:cache_hit_rate",
+    "sglang:num_running_reqs",
+    "sglang:num_queue_reqs",
 ];
 
 const M_PROMPT: &str = "sglang:prompt_tokens_total";
@@ -36,6 +38,8 @@ const M_GEN: &str = "sglang:generation_tokens_total";
 const M_REQ: &str = "sglang:num_requests_total";
 const M_CACHED: &str = "sglang:cached_tokens_total";
 const M_HIT: &str = "sglang:cache_hit_rate";
+const M_RUNNING: &str = "sglang:num_running_reqs";
+const M_QUEUE: &str = "sglang:num_queue_reqs";
 
 // ---------- CLI (clap) ----------
 
@@ -767,6 +771,13 @@ struct EpSummary {
     grand: BTreeMap<String, f64>,
     hit_avg: Option<f64>,
     hit_latest: Option<f64>,
+    // Latest recorded value of the running- and queued-request
+    // gauges, plus the time of the scrape that produced them. None
+    // when the db has no samples for a metric.
+    running_latest: Option<f64>,
+    running_latest_ts: Option<f64>,
+    queued_latest: Option<f64>,
+    queued_latest_ts: Option<f64>,
     model_costs: Vec<ModelCost>,
     est_cost: f64,
     costs_file: Option<String>,
@@ -802,6 +813,10 @@ fn endpoint_summary(
             grand: BTreeMap::new(),
             hit_avg: None,
             hit_latest: None,
+            running_latest: None,
+            running_latest_ts: None,
+            queued_latest: None,
+            queued_latest_ts: None,
             model_costs: Vec::new(),
             est_cost: 0.0,
             costs_file,
@@ -885,9 +900,21 @@ fn endpoint_summary(
     }
 
     let mut hits: Vec<f64> = Vec::new();
-    for (_, name, _, value, _) in rows {
+    let mut running_latest: Option<f64> = None;
+    let mut running_latest_ts: Option<f64> = None;
+    let mut queued_latest: Option<f64> = None;
+    let mut queued_latest_ts: Option<f64> = None;
+    for (ts, name, _, value, _) in rows {
         if name == M_HIT {
             hits.push(*value);
+        }
+        if name == M_RUNNING {
+            running_latest = Some(*value);
+            running_latest_ts = Some(*ts);
+        }
+        if name == M_QUEUE {
+            queued_latest = Some(*value);
+            queued_latest_ts = Some(*ts);
         }
     }
 
@@ -946,6 +973,10 @@ fn endpoint_summary(
             Some(hits.iter().sum::<f64>() / hits.len() as f64)
         },
         hit_latest: hits.last().copied(),
+        running_latest,
+        running_latest_ts,
+        queued_latest,
+        queued_latest_ts,
         model_costs,
         est_cost,
         costs_file,
@@ -1301,6 +1332,20 @@ fn run_report_and_sessions(args: &ReportArgs, sessions_only: bool) -> i32 {
         println!("  generation tokens (out):  {}", fmt_int(gen));
         println!("  requests:                 {}", fmt_int(reqs));
         println!("  cached prompt tokens:     {}", fmt_int(cached));
+        if let (Some(v), Some(ts)) = (r.running_latest, r.running_latest_ts) {
+            println!(
+                "  running requests:       {}  (as of {})",
+                fmt_int(v),
+                fmt_local(ts)
+            );
+        }
+        if let (Some(v), Some(ts)) = (r.queued_latest, r.queued_latest_ts) {
+            println!(
+                "  queued requests:        {}  (as of {})",
+                fmt_int(v),
+                fmt_local(ts)
+            );
+        }
         match (r.hit_avg, r.hit_latest) {
             (Some(a), Some(l)) => println!(
                 "  cache hit rate:           avg {:.1}%  latest {:.1}%",
@@ -1355,10 +1400,26 @@ fn run_report_and_sessions(args: &ReportArgs, sessions_only: bool) -> i32 {
         .map(|r| r.grand.get(M_REQ).copied().unwrap_or(0.0))
         .sum();
     let tcost: f64 = summaries.iter().map(|r| r.est_cost).sum();
+    let trunning: Option<f64> = if summaries.iter().any(|r| r.running_latest.is_some()) {
+        Some(summaries.iter().filter_map(|r| r.running_latest).sum())
+    } else {
+        None
+    };
+    let tqueued: Option<f64> = if summaries.iter().any(|r| r.queued_latest.is_some()) {
+        Some(summaries.iter().filter_map(|r| r.queued_latest).sum())
+    } else {
+        None
+    };
     println!("Totals across {} endpoint(s):", summaries.len());
     println!("  prompt tokens:   {}", fmt_int(tp));
     println!("  generation:      {}", fmt_int(tg));
     println!("  requests:        {}", fmt_int(tr));
+    if let Some(v) = trunning {
+        println!("  running requests:  {}  (sum of latest per endpoint)", fmt_int(v));
+    }
+    if let Some(v) = tqueued {
+        println!("  queued requests:   {}  (sum of latest per endpoint)", fmt_int(v));
+    }
     println!("  est. savings:    ${:.2}", tcost);
     0
 }
@@ -1469,6 +1530,30 @@ fn json_report(summaries: &[EpSummary]) -> String {
             r.hit_avg.map(|v| v.to_string()).unwrap_or_else(|| "null".into()),
             r.hit_latest.map(|v| v.to_string()).unwrap_or_else(|| "null".into())
         ));
+        s.push_str(&format!(
+            "    \"running_requests\": {{\"latest\": {}, \"latest_ts\": {}, \"latest_ts_local\": {}}},\n",
+            r.running_latest
+                .map(|v| v.to_string())
+                .unwrap_or_else(|| "null".into()),
+            r.running_latest_ts
+                .map(|v| v.to_string())
+                .unwrap_or_else(|| "null".into()),
+            r.running_latest_ts
+                .map(|v| format!("\"{}\"", iso_local(v)))
+                .unwrap_or_else(|| "null".into())
+        ));
+        s.push_str(&format!(
+            "    \"queued_requests\": {{\"latest\": {}, \"latest_ts\": {}, \"latest_ts_local\": {}}},\n",
+            r.queued_latest
+                .map(|v| v.to_string())
+                .unwrap_or_else(|| "null".into()),
+            r.queued_latest_ts
+                .map(|v| v.to_string())
+                .unwrap_or_else(|| "null".into()),
+            r.queued_latest_ts
+                .map(|v| format!("\"{}\"", iso_local(v)))
+                .unwrap_or_else(|| "null".into())
+        ));
         s.push_str("    \"by_model\": [\n");
         for (j, m) in r.model_costs.iter().enumerate() {
             if j > 0 {
@@ -1541,7 +1626,7 @@ fn yaml_endpoint(r: &EpSummary) -> String {
     let tz = tz_info();
     let i = "  ";
     let j = "    ";
-    let k = "      ";
+    let m = "        ";
     let mut s = String::new();
     s.push_str(&format!("- endpoint: {}\n", y_s(&r.endpoint)));
     s.push_str(&format!("{i}timezone: {}\n", y_s(&tz.zone)));
@@ -1585,7 +1670,7 @@ fn yaml_endpoint(r: &EpSummary) -> String {
             ));
             s.push_str(&format!("{j}  totals:\n"));
             for (key, v) in &win.totals {
-                s.push_str(&format!("{k}{}: {}\n", y_s(key), v));
+                s.push_str(&format!("{m}{}: {}\n", y_s(key), v));
             }
         }
     }
@@ -1602,6 +1687,32 @@ fn yaml_endpoint(r: &EpSummary) -> String {
     s.push_str(&format!("{i}cache_hit_rate:\n"));
     s.push_str(&format!("{j}avg: {}\n", num_or_null(r.hit_avg)));
     s.push_str(&format!("{j}latest: {}\n", num_or_null(r.hit_latest)));
+    s.push_str(&format!("{i}running_requests:\n"));
+    s.push_str(&format!(
+        "{j}latest: {}\n",
+        num_or_null(r.running_latest)
+    ));
+    s.push_str(&format!(
+        "{j}latest_ts: {}\n",
+        num_or_null(r.running_latest_ts)
+    ));
+    s.push_str(&format!(
+        "{j}latest_ts_local: {}\n",
+        y_s_opt(r.running_latest_ts.map(iso_local))
+    ));
+    s.push_str(&format!("{i}queued_requests:\n"));
+    s.push_str(&format!(
+        "{j}latest: {}\n",
+        num_or_null(r.queued_latest)
+    ));
+    s.push_str(&format!(
+        "{j}latest_ts: {}\n",
+        num_or_null(r.queued_latest_ts)
+    ));
+    s.push_str(&format!(
+        "{j}latest_ts_local: {}\n",
+        y_s_opt(r.queued_latest_ts.map(iso_local))
+    ));
     s.push('\n');
     if r.model_costs.is_empty() {
         s.push_str(&format!("{i}by_model: []\n"));
@@ -1744,6 +1855,18 @@ fn toml_endpoint(r: &EpSummary) -> String {
         s.push_str("[endpoints.cache_hit_rate]\n");
         t_f_opt(&mut s, "avg", r.hit_avg);
         t_f_opt(&mut s, "latest", r.hit_latest);
+    }
+    if r.running_latest.is_some() || r.running_latest_ts.is_some() {
+        s.push_str("[endpoints.running_requests]\n");
+        t_f_opt(&mut s, "latest", r.running_latest);
+        t_f_opt(&mut s, "latest_ts", r.running_latest_ts);
+        t_s_opt(&mut s, "latest_ts_local", r.running_latest_ts.map(iso_local));
+    }
+    if r.queued_latest.is_some() || r.queued_latest_ts.is_some() {
+        s.push_str("[endpoints.queued_requests]\n");
+        t_f_opt(&mut s, "latest", r.queued_latest);
+        t_f_opt(&mut s, "latest_ts", r.queued_latest_ts);
+        t_s_opt(&mut s, "latest_ts_local", r.queued_latest_ts.map(iso_local));
     }
     s.push('\n');
     s
