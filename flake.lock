@@ -83,11 +83,11 @@
         "nixpkgs": "nixpkgs_2"
       },
       "locked": {
-        "lastModified": 1777024856,
-        "narHash": "sha256-OQ+yIcRMXo4UaHyX+W5DCgBvJ5dZo/3kFGWPJiuR6x8=",
+        "lastModified": 1786696832,
+        "narHash": "sha256-wjdfX+jCJCJsteGD75xEfsDR3yATFFEx4mwelhlDXdU=",
         "owner": "catppuccin",
         "repo": "nix",
-        "rev": "f41cc1cf13647e482b7317396f749840ef715e16",
+        "rev": "35d78c213b65e38789bcb359aae2380fcb4dc3e8",
         "type": "github"
       },
       "original": {
@@ -558,18 +558,15 @@
     },
     "nixpkgs_2": {
       "locked": {
-        "lastModified": 1776548001,
-        "narHash": "sha256-ZSK0NL4a1BwVbbTBoSnWgbJy9HeZFXLYQizjb2DPF24=",
-        "owner": "NixOS",
-        "repo": "nixpkgs",
-        "rev": "b12141ef619e0a9c1c84dc8c684040326f27cdcc",
-        "type": "github"
+        "lastModified": 1786534138,
+        "narHash": "sha256-Cwffw7dPM56d8spt4/queFQ1cKg69D9qrsp+wfwKvfo=",
+        "rev": "044bfe75bfe4c7bbe043dc17b5e42ea823b84a09",
+        "type": "tarball",
+        "url": "https://releases.nixos.org/nixpkgs/nixpkgs-26.11pre1052792.044bfe75bfe4/nixexprs.tar.xz"
       },
       "original": {
-        "owner": "NixOS",
-        "ref": "nixos-unstable",
-        "repo": "nixpkgs",
-        "type": "github"
+        "type": "tarball",
+        "url": "https://channels.nixos.org/nixpkgs-unstable/nixexprs.tar.xz"
       }
     },
     "nixpkgs_3": {
@@ -747,11 +744,11 @@
         "pi-flake": "pi-flake"
       },
       "locked": {
-        "lastModified": 1787826593,
-        "narHash": "sha256-j9SqUMPd4ItCeuOdmGeBLE+iShx6nTue8kCkdWZy1D4=",
+        "lastModified": 1788295413,
+        "narHash": "sha256-DBzzUYAmJTny998DgbIzbgEHBMM1Ol9SHN6bCLsjOJY=",
         "ref": "refs/heads/main",
-        "rev": "11bd0c3ca30dbd513416ea855be6d9faac93609e",
-        "revCount": 109,
+        "rev": "fbd90349df4a7df931f019309575bc9af65a6ada",
+        "revCount": 113,
         "type": "git",
         "url": "ssh://git@github.com/TonyWu20/pi-config"
       },
