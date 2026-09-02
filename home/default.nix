@@ -3,23 +3,6 @@ let
   fetch_pot = inputs.castep_job_submit.packages.x86_64-linux.default;
   slurm_job = pkgs.writeShellScriptBin "slurm_job.sh" (builtins.readFile ../slurm/slurm_job.sh);
   slurm_lammps = pkgs.writeShellScriptBin "slurm_lammps.sh" (builtins.readFile ../slurm/slurm_lammps.sh);
-  catppuccin_programs = [
-    "bat"
-    "btop"
-    "delta"
-    "eza"
-    "fish"
-    "fzf"
-    "hyprland"
-    "hyprlock"
-    "nushell"
-    "skim"
-    "starship"
-    "tofi"
-    "tmux"
-    "yazi"
-  ];
-
 in
 {
   imports = [
@@ -42,7 +25,11 @@ in
   ];
 
 
-  catppuccin = lib.attrsets.genAttrs catppuccin_programs (prog: { enable = true; flavor = "macchiato"; });
+  catppuccin = {
+    autoEnable = true;
+    enable = true;
+    flavor = "macchiato";
+  };
   services.udiskie = {
     enable = true;
     settings = {
@@ -153,6 +140,7 @@ in
     glow # markdown previewer in terminal
     neomutt # email client in command line
     pandoc
+    terminal-browser
 
     iotop # io monitoring
     iftop # network monitoring
