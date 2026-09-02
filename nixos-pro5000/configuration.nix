@@ -26,7 +26,10 @@
         prefixLength = 24;
       }];
     };
-    firewall.trustedInterfaces = [ "enp11s0" ];
+    firewall = {
+      trustedInterfaces = [ "enp11s0" ];
+      allowedTCPPorts = [ 8000 ];
+    };
   };
 
   # Register the cluster DNS server with resolvconf. The DNS/NAT gateway is
