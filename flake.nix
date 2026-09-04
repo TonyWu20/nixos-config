@@ -230,7 +230,7 @@
             ./roles/compute-node-pro5000.nix
           ];
           homeImports = {
-            tony.imports = [ ./home/tony-node.nix ];
+            tony.imports = [ ./home/tony-node.nix ./nixos-pro5000/home_ssh.nix ];
           };
         };
       };
