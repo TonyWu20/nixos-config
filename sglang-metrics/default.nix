@@ -22,15 +22,18 @@ let
   # Every entry must have input and output prices.
   costsOk =
     let costs = cfg.costs;
-    in lib.all (e:
-      lib.isAttrs e
-      && (builtins.hasAttr "input" e)
-      && (builtins.hasAttr "output" e)
-    ) (costs.models or [])
-      && (!(costs ? default)
-      || (lib.isAttrs costs.default
-      && (builtins.hasAttr "input" costs.default)
-      && (builtins.hasAttr "output" costs.default)));
+    in
+    lib.all
+      (e:
+        lib.isAttrs e
+        && (builtins.hasAttr "input" e)
+        && (builtins.hasAttr "output" e)
+      )
+      (costs.models or [ ])
+    && (!(costs ? default)
+    || (lib.isAttrs costs.default
+    && (builtins.hasAttr "input" costs.default)
+    && (builtins.hasAttr "output" costs.default)));
 
   reportBin = pkgs.writeShellScriptBin "sglang-usage-report" ''
     exec ${bin}/bin/sglang-usage report \
@@ -52,7 +55,7 @@ in
 
     endpoints = lib.mkOption {
       type = lib.types.listOf lib.types.str;
-      default = [ "127.0.0.1:30000"];
+      default = [ "127.0.0.1:30000" ];
       description = ''
         SGLang endpoints to scrape, as HOST:PORT or NAME=HOST:PORT.
         The NAME part labels the data rows. The server must run with
@@ -106,7 +109,7 @@ in
         models = [
           { id = "Qwen3.8-Flash-Next-NVFP4"; input = 0.44; output = 1.32; cacheRead = 0.014; }
           { id = "Qwen3.8-27B-NVFP4"; input = 0.44; output = 1.32; cacheRead = 0.014; }
-          { id = "Qwen3.8-27B-NVFP4-RTX5090-DSPARK"; input = 0.44; output = 1.32; cacheRead = 0.014; }
+          { id = "Qwen3.8-27B-NVFP4-RTX5090"; input = 1.32; output = 3.96; cacheRead = 0.044; }
           { id = "Qwen3.8-27B-DAU-IQ4"; input = 1.74; output = 3.48; cacheRead = 0.145; }
           { id = "Qwen3.8-27B-DAU-Q8_0"; input = 1.74; output = 3.48; cacheRead = 0.145; }
           { id = "Qwen3.8-27B-GGUF-DFlash2-UD-Q6_K_XL"; input = 1.74; output = 3.48; cacheRead = 0.145; }
@@ -136,9 +139,10 @@ in
       user = "root";
       group = "root";
       mode = "0444";
-      text = if costsOk
-      then builtins.toJSON cfg.costs
-      else throw "services.sglangMetrics.costs: every models entry and default need input and output";
+      text =
+        if costsOk
+        then builtins.toJSON cfg.costs
+        else throw "services.sglangMetrics.costs: every models entry and default need input and output";
     };
 
     systemd.services.sglang-metrics-collect = {
