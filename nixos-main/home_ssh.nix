@@ -51,6 +51,13 @@
         hostname = "10.0.0.6";
         identityFile = config.sops.secrets."tony-ssh/ssh.key".path;
         forwardAgent = true;
+        LocalForward = [
+          {
+            bind.port = 30000;
+            host.address = "127.0.0.1";
+            host.port = 30000;
+          }
+        ];
       };
       m4 = {
         host = "macm4";

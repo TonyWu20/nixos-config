@@ -744,11 +744,11 @@
         "pi-flake": "pi-flake"
       },
       "locked": {
-        "lastModified": 1788295413,
-        "narHash": "sha256-DBzzUYAmJTny998DgbIzbgEHBMM1Ol9SHN6bCLsjOJY=",
+        "lastModified": 1788559060,
+        "narHash": "sha256-xvMs189z2ddNoCvir9403SKvs9dchPHYF4mKeGFS9Hs=",
         "ref": "refs/heads/main",
-        "rev": "fbd90349df4a7df931f019309575bc9af65a6ada",
-        "revCount": 113,
+        "rev": "bbfb7482b131be090f1bbf6e0520f8fc07f68681",
+        "revCount": 117,
         "type": "git",
         "url": "ssh://git@github.com/TonyWu20/pi-config"
       },
