@@ -23,10 +23,12 @@ let
   # alias is the Host block key itself, which is what you `ssh` to.
   aliasOf = name: _: name;
 
-  # Drop the github.com remote (git remote, not a herdr host). The `gh` entry
-  # resolves to github.com; the machine entries resolve to IPs.
-  isGitHub = _: value:
-    (value.hostname or "") == "github.com"
+  # Drop the github.com remote (a git remote, not a herdr host). home-manager
+  # ssh settings do not always expose the `host`/`hostname` fields, so match the
+  # github entry by its ssh key (`gh`) as well as by any github host/hostname.
+  isGitHub = name: value:
+    name == "gh"
+    || (value.hostname or "") == "github.com"
     || (value.host or "") == "github.com";
 
   machines = lib.filterAttrs (name: value: !isGitHub name value) sshSettings;
