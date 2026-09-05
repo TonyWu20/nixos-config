@@ -41,6 +41,10 @@
     };
     sglang-flake.url = "github:TonyWu20/sglang_flake";
     terminal-browser-flake.url = "github:TonyWu20/terminal-browser-flake";
+    herdr-nix = {
+      url = "github:TonyWu20/herdr-nix/home-manager-module";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs =
@@ -59,6 +63,7 @@
     , pi-config
     , sglang-flake
     , terminal-browser-flake
+    , herdr-nix
     , ...
     }:
     let
@@ -129,6 +134,7 @@
         sops-nix.homeManagerModules.sops
         pi.homeModules.default
         (pi-config.piModules.homeManager { system = "x86_64-linux"; })
+        herdr-nix.homeManagerModules.default
       ];
 
       # ---- Machine factory: builds a NixOS system from roles + machine-specific config ----
@@ -152,7 +158,10 @@
                   sharedModules = homeSharedModules;
                   users = homeImports;
                   backupFileExtension = "backup";
-                  extraSpecialArgs = { inherit inputs pi-config; };
+                  extraSpecialArgs = {
+                    inherit inputs pi-config;
+                    inherit (inputs) herdr-nix;
+                  };
                 };
               }
               sglang-flake.nixosModules.default
@@ -189,7 +198,7 @@
             ./roles/head-node.nix
           ];
           homeImports = {
-            tony.imports = [ ./home/tony.nix ./nixos-main/home_ssh.nix ./nixos-main/home_wayland.nix ];
+            tony.imports = [ ./home/tony.nix ./nixos-main/home_ssh.nix ./nixos-main/home_wayland.nix ./herdr ];
             jerry.imports = [ ./home/jerry.nix ];
             qiuyang.imports = [ ./home/qiuyang.nix ];
           };
@@ -230,7 +239,7 @@
             ./roles/compute-node-pro5000.nix
           ];
           homeImports = {
-            tony.imports = [ ./home/tony-node.nix ./nixos-pro5000/home_ssh.nix ];
+            tony.imports = [ ./home/tony-node.nix ./nixos-pro5000/home_ssh.nix ./herdr ];
           };
         };
       };
