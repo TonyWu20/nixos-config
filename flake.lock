@@ -835,6 +835,7 @@
         "sglang-flake": "sglang-flake",
         "sops-nix": "sops-nix",
         "terminal-browser-flake": "terminal-browser-flake",
+        "tmux-agent-pane": "tmux-agent-pane",
         "wait-for-lsp": "wait-for-lsp",
         "wezterm": "wezterm"
       }
@@ -1026,6 +1027,23 @@
         "owner": "TonyWu20",
         "repo": "terminal-browser-flake",
         "type": "github"
+      }
+    },
+    "tmux-agent-pane": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1788671367,
+        "narHash": "sha256-zqEDanhT6lyrGNDqjtxaZZzmmiQmdrXzGVqj/VIuPeg=",
+        "path": "/home/tony/programming/tmux-agent-pane",
+        "type": "path"
+      },
+      "original": {
+        "path": "/home/tony/programming/tmux-agent-pane",
+        "type": "path"
       }
     },
     "treefmt-nix": {

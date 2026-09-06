@@ -41,6 +41,10 @@
     };
     sglang-flake.url = "github:TonyWu20/sglang_flake";
     terminal-browser-flake.url = "github:TonyWu20/terminal-browser-flake";
+    tmux-agent-pane = {
+      url = "path:/home/tony/programming/tmux-agent-pane";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     herdr-nix = {
       url = "github:TonyWu20/herdr-nix/home-manager-module";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -63,6 +67,7 @@
     , pi-config
     , sglang-flake
     , terminal-browser-flake
+    , tmux-agent-pane
     , herdr-nix
     , ...
     }:
@@ -103,6 +108,7 @@
         })
         sglang-flake.overlays.default
         terminal-browser-flake.overlays.default
+        tmux-agent-pane.overlays.default
       ];
 
       pkgs = import nixpkgs {

@@ -1,4 +1,8 @@
 { pkgs, ... }: {
+  home.packages = [
+    pkgs.tmux-agent-pane
+  ];
+
   programs.tmux = {
     enable = true;
     shell = "${pkgs.fish}/bin/fish";
@@ -17,6 +21,11 @@
         run-shell 'if [ "$(tmux show-env -g TMUX_CPU_INITIALIZED 2>/dev/null)" = "" ]; then tmux set-env -g TMUX_CPU_INITIALIZED 1; ${pkgs.tmuxPlugins.cpu}/share/tmux-plugins/cpu/cpu.tmux; fi'
       ''
       (builtins.readFile ./tmux_catppuccin.conf)
+      ''
+        # tmux-agent-pane: agent pane status sidebar
+        set-environment -g TMUX_PLUGIN_DIR "${pkgs.tmux-agent-pane}"
+        run-shell 'if [ "$(tmux show-env -g TAP_INITIALIZED 2>/dev/null)" = "" ]; then tmux set-env -g TAP_INITIALIZED 1; ${pkgs.tmux-agent-pane}/bin/tmux-agent-pane.tmux; fi'
+      ''
     ];
     terminal = "xterm-256color";
     plugins = with pkgs; [
