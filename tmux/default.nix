@@ -1,6 +1,10 @@
 { pkgs, ... }: {
   home.packages = [
     pkgs.tmux-agent-pane
+    # cpu plugin is loaded only by the guarded run-shell in extraConfig below,
+    # so it is not listed in programs.tmux.plugins (which would also emit an
+    # unconditional run-shell and source cpu.tmux a second time).
+    pkgs.tmuxPlugins.cpu
   ];
 
   programs.tmux = {
@@ -35,7 +39,6 @@
       tmuxPlugins.yank
       tmuxPlugins.sensible
       tmuxPlugins.catppuccin
-      tmuxPlugins.cpu
     ];
   };
 }
