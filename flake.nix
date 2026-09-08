@@ -37,7 +37,8 @@
     pi-config = {
       url = "git+ssh://git@github.com/TonyWu20/pi-config";
       #url = "git+file:///home/tony/programming/pi-config";
-      inputs.nixpkgs.follows = "pi";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.pi-flake.follows = "pi";
     };
     sglang-flake.url = "github:TonyWu20/sglang_flake";
     terminal-browser-flake.url = "github:TonyWu20/terminal-browser-flake";
