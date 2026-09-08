@@ -32,23 +32,15 @@
     };
     pi = {
       url = "github:lukasl-dev/pi.nix";
-      inputs.nixpkgs.follows = "nixpkgs";
+      #inputs.nixpkgs.follows = "nixpkgs";
     };
     pi-config = {
       url = "git+ssh://git@github.com/TonyWu20/pi-config";
       #url = "git+file:///home/tony/programming/pi-config";
-      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.nixpkgs.follows = "pi";
     };
     sglang-flake.url = "github:TonyWu20/sglang_flake";
     terminal-browser-flake.url = "github:TonyWu20/terminal-browser-flake";
-    tmux-agent-pane = {
-      url = "path:/home/tony/programming/tmux-agent-pane";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-    herdr-nix = {
-      url = "github:TonyWu20/herdr-nix/home-manager-module";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
   };
 
   outputs =
@@ -67,34 +59,14 @@
     , pi-config
     , sglang-flake
     , terminal-browser-flake
-    , tmux-agent-pane
-    , herdr-nix
     , ...
     }:
     let
       system = "x86_64-linux";
 
       # ---- Flake-level overlays (used by devShells, packages, and passed to nixosSystem) ----
-      claude-code-rev = "v2.1.193";
-      claude-code-overlay = final: prev:
-        let
-          stdenv = final.stdenvNoCC;
-          baseUrl = "https://downloads.claude.ai/claude-code-releases";
-          platformKey = "${stdenv.hostPlatform.node.platform}-${stdenv.hostPlatform.node.arch}";
-        in
-        {
-          claude-code = prev.claude-code.overrideAttrs (old: rec {
-            version = final.lib.removePrefix "v" claude-code-rev;
-            src = final.fetchurl {
-              url = "${baseUrl}/${version}/${platformKey}/claude";
-              sha256 = "sha256-yfBNkp8YvZoQHziX8n3k4eDxXr6EANSq8CmD1z3Wax0=";
-            };
-          });
-        };
-
       overlays = [
         fenix.overlays.default
-        claude-code-overlay
         wait-for-lsp.overlays.default
         (import ./overlays/llama-cpp-dflash2.nix)
         #(final: prev: {
@@ -108,7 +80,6 @@
         })
         sglang-flake.overlays.default
         terminal-browser-flake.overlays.default
-        tmux-agent-pane.overlays.default
       ];
 
       pkgs = import nixpkgs {
@@ -140,7 +111,6 @@
         sops-nix.homeManagerModules.sops
         pi.homeModules.default
         (pi-config.piModules.homeManager { system = "x86_64-linux"; })
-        herdr-nix.homeManagerModules.default
       ];
 
       # ---- Machine factory: builds a NixOS system from roles + machine-specific config ----
@@ -166,7 +136,6 @@
                   backupFileExtension = "backup";
                   extraSpecialArgs = {
                     inherit inputs pi-config;
-                    inherit (inputs) herdr-nix;
                   };
                 };
               }
@@ -204,7 +173,7 @@
             ./roles/head-node.nix
           ];
           homeImports = {
-            tony.imports = [ ./home/tony.nix ./nixos-main/home_ssh.nix ./nixos-main/home_wayland.nix ./herdr ];
+            tony.imports = [ ./home/tony.nix ./nixos-main/home_ssh.nix ./nixos-main/home_wayland.nix ];
             jerry.imports = [ ./home/jerry.nix ];
             qiuyang.imports = [ ./home/qiuyang.nix ];
           };
@@ -245,7 +214,7 @@
             ./roles/compute-node-pro5000.nix
           ];
           homeImports = {
-            tony.imports = [ ./home/tony-node.nix ./nixos-pro5000/home_ssh.nix ./herdr ];
+            tony.imports = [ ./home/tony-node.nix ./nixos-pro5000/home_ssh.nix ];
           };
         };
       };

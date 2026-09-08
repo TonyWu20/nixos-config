@@ -13,7 +13,6 @@ in
     ../fish
     ../fcitx5/home.nix
     ../rime
-    ../claude-code
   ];
   # TODO please change the username & home directory to your own
   home.sessionVariables = {
