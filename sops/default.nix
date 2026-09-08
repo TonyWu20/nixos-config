@@ -14,6 +14,7 @@ let
     "discord_notify_user_ids"
     "discord_summary_channel_id"
     "deepseek_token"
+    "hf_token"
   ];
   dev_vars = lib.listToAttrs (map
     (var: {
