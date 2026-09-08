@@ -4,7 +4,7 @@
     executable = true;
   };
   home.file.".config/waybar/colors.css".source = ./colors.css;
-  home.file.".config/waybar/style.css".source = ./style.css;
+  # style.css is managed by programs.waybar.style (set by catppuccin)
   home.file.".config/waybar/gpu.sh" = {
     source = ./gpu.sh;
     executable = true;
