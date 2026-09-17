@@ -1,4 +1,4 @@
-{ config, lib, pkgs, ... }:
+{ config, lib, pkgs, rushi-config, ... }:
 let
   secretNames = [
     "poe_chatbot_api"
@@ -14,6 +14,8 @@ let
     "discord_notify_user_ids"
     "discord_summary_channel_id"
     "deepseek_token"
+    "mineru_token"
+    "hf_token"
   ];
   apiSecrets = lib.listToAttrs (map
     (var: {
@@ -38,4 +40,8 @@ in
   home.packages = with pkgs; [
     terminal-browser
   ];
+  programs.rushi = {
+    enable  = true;
+    package = rushi-config.packages.x86_64-linux.rushi;
+  };
 }

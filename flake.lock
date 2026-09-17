@@ -259,6 +259,42 @@
         "type": "github"
       }
     },
+    "flake-utils_2": {
+      "inputs": {
+        "systems": "systems_3"
+      },
+      "locked": {
+        "lastModified": 1731533236,
+        "narHash": "sha256-l0KFg5HjrsfsO/JpG+r7fRrqm12kzFHyUHqHCVpMMbI=",
+        "owner": "numtide",
+        "repo": "flake-utils",
+        "rev": "11707dc2f618dd54ca8739b309ec4fc024de578b",
+        "type": "github"
+      },
+      "original": {
+        "owner": "numtide",
+        "repo": "flake-utils",
+        "type": "github"
+      }
+    },
+    "flake-utils_3": {
+      "inputs": {
+        "systems": "systems_4"
+      },
+      "locked": {
+        "lastModified": 1731533236,
+        "narHash": "sha256-l0KFg5HjrsfsO/JpG+r7fRrqm12kzFHyUHqHCVpMMbI=",
+        "owner": "numtide",
+        "repo": "flake-utils",
+        "rev": "11707dc2f618dd54ca8739b309ec4fc024de578b",
+        "type": "github"
+      },
+      "original": {
+        "owner": "numtide",
+        "repo": "flake-utils",
+        "type": "github"
+      }
+    },
     "freetype2": {
       "flake": false,
       "locked": {
@@ -597,6 +633,31 @@
         "type": "github"
       }
     },
+    "no-find-grep": {
+      "inputs": {
+        "fenix": [
+          "rushi-config",
+          "fenix"
+        ],
+        "nixpkgs": [
+          "rushi-config",
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1789593726,
+        "narHash": "sha256-oSmzRHz9IBSi54iI/l/FPJoz3XAdDB/MrEHtrxkdzjo=",
+        "owner": "TonyWu20",
+        "repo": "no-find-grep-rushi",
+        "rev": "041434d042e62e16a586bf32682463e31bb1f769",
+        "type": "github"
+      },
+      "original": {
+        "owner": "TonyWu20",
+        "repo": "no-find-grep-rushi",
+        "type": "github"
+      }
+    },
     "nushell-cfg": {
       "inputs": {
         "flake-parts": "flake-parts_2",
@@ -631,11 +692,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1788871181,
-        "narHash": "sha256-+1bGBEFWXRyj1tGuch0dV37KfktC7YTGSZm1l1gKawI=",
+        "lastModified": 1788960793,
+        "narHash": "sha256-6gAq4oinU9Aj6GxF6mCkC8bklC6gbrC6uOII1uS6sJY=",
         "owner": "TonyWu20",
         "repo": "nvimdots",
-        "rev": "49ec4813c0a4b8a3cdc5a6107c4f49cdc818c8bf",
+        "rev": "0907a8866e2c15e995c45bd676b0ecb68f5d0016",
         "type": "github"
       },
       "original": {
@@ -702,11 +763,195 @@
         "nvimdots": "nvimdots",
         "pi": "pi",
         "pi-config": "pi-config",
+        "rushi-config": "rushi-config",
         "sglang-flake": "sglang-flake",
         "sops-nix": "sops-nix",
         "terminal-browser-flake": "terminal-browser-flake",
         "wait-for-lsp": "wait-for-lsp",
         "wezterm": "wezterm"
+      }
+    },
+    "rushi-config": {
+      "inputs": {
+        "fenix": [
+          "fenix"
+        ],
+        "nixpkgs": [
+          "nixpkgs"
+        ],
+        "no-find-grep": "no-find-grep",
+        "rushi-goal-mode": "rushi-goal-mode",
+        "rushi-kernel": "rushi-kernel",
+        "rushi-obscura-web-access": "rushi-obscura-web-access",
+        "rushi-simple-english": "rushi-simple-english",
+        "rushi-statusline": "rushi-statusline",
+        "rushi-tui": "rushi-tui"
+      },
+      "locked": {
+        "lastModified": 1789677127,
+        "narHash": "sha256-sHzVim1FmA/vfXGU9jbYwV6zDeLmpAUsNqYx61FQ27o=",
+        "path": "/home/tony/programming/rushi-config",
+        "type": "path"
+      },
+      "original": {
+        "path": "/home/tony/programming/rushi-config",
+        "type": "path"
+      }
+    },
+    "rushi-goal-mode": {
+      "inputs": {
+        "fenix": [
+          "rushi-config",
+          "fenix"
+        ],
+        "nixpkgs": [
+          "rushi-config",
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1789674150,
+        "narHash": "sha256-KZ2mvn5LdyWm5O4KooefCFeiIv8MflJIn90mW/zCous=",
+        "owner": "TonyWu20",
+        "repo": "rushi-goal-mode",
+        "rev": "6082c140ca7cd2b9f9df75e4d42d679442306f2f",
+        "type": "github"
+      },
+      "original": {
+        "owner": "TonyWu20",
+        "repo": "rushi-goal-mode",
+        "type": "github"
+      }
+    },
+    "rushi-kernel": {
+      "inputs": {
+        "fenix": [
+          "rushi-config",
+          "fenix"
+        ],
+        "flake-utils": "flake-utils",
+        "nixpkgs": [
+          "rushi-config",
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1789676994,
+        "narHash": "sha256-nLl3dX4y6RriQjbIRn4p/40H3zYljvnRP5gG8gXa7pk=",
+        "owner": "TonyWu20",
+        "repo": "rushi",
+        "rev": "c817ddb805eb5e6916e99b72789f578eaaa5949d",
+        "type": "github"
+      },
+      "original": {
+        "owner": "TonyWu20",
+        "repo": "rushi",
+        "type": "github"
+      }
+    },
+    "rushi-obscura-web-access": {
+      "inputs": {
+        "fenix": [
+          "rushi-config",
+          "fenix"
+        ],
+        "nixpkgs": [
+          "rushi-config",
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1789593739,
+        "narHash": "sha256-V3Y556EqtCspWfpFPI8wctg6mfYLzp+phds+EaJ7FGY=",
+        "owner": "TonyWu20",
+        "repo": "rushi-obscura-web-access",
+        "rev": "6948d460e9bd158f9d70ccfde183fc83f2653c9e",
+        "type": "github"
+      },
+      "original": {
+        "owner": "TonyWu20",
+        "repo": "rushi-obscura-web-access",
+        "type": "github"
+      }
+    },
+    "rushi-simple-english": {
+      "inputs": {
+        "fenix": [
+          "rushi-config",
+          "fenix"
+        ],
+        "nixpkgs": [
+          "rushi-config",
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1789653494,
+        "narHash": "sha256-/ENjd55fhRVsDbnhZveShdUOOAaT27eWottp5DcxpJY=",
+        "owner": "TonyWu20",
+        "repo": "rushi-simple-english",
+        "rev": "ffdb5658eafca2f37fdbbf261d78e9e661d99608",
+        "type": "github"
+      },
+      "original": {
+        "owner": "TonyWu20",
+        "repo": "rushi-simple-english",
+        "type": "github"
+      }
+    },
+    "rushi-statusline": {
+      "inputs": {
+        "fenix": [
+          "rushi-config",
+          "fenix"
+        ],
+        "nixpkgs": [
+          "rushi-config",
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1789593729,
+        "narHash": "sha256-t28sp+MkEmwnkKB7nWv37cL6ITBpapRpub8e6gA7lzQ=",
+        "owner": "TonyWu20",
+        "repo": "rushi-statusline",
+        "rev": "dbc9db298015832bd64962e7547df2b07a6d9527",
+        "type": "github"
+      },
+      "original": {
+        "owner": "TonyWu20",
+        "repo": "rushi-statusline",
+        "type": "github"
+      }
+    },
+    "rushi-tui": {
+      "inputs": {
+        "fenix": [
+          "rushi-config",
+          "fenix"
+        ],
+        "flake-utils": "flake-utils_2",
+        "nixpkgs": [
+          "rushi-config",
+          "nixpkgs"
+        ],
+        "rushi-kernel": [
+          "rushi-config",
+          "rushi-kernel"
+        ]
+      },
+      "locked": {
+        "lastModified": 1789667716,
+        "narHash": "sha256-YBEBuJVl7rosNXulObzyalVEnBajswCkE2629OXk9Tw=",
+        "owner": "TonyWu20",
+        "repo": "rushi-tui",
+        "rev": "20728b4ba6c040631008b7b31b241bdfe21e64e8",
+        "type": "github"
+      },
+      "original": {
+        "owner": "TonyWu20",
+        "repo": "rushi-tui",
+        "type": "github"
       }
     },
     "rust-analyzer-src": {
@@ -850,6 +1095,36 @@
         "type": "github"
       }
     },
+    "systems_3": {
+      "locked": {
+        "lastModified": 1681028828,
+        "narHash": "sha256-Vy1rq5AaRuLzOxct8nz4T6wlgyUR7zLU309k9mBC768=",
+        "owner": "nix-systems",
+        "repo": "default",
+        "rev": "da67096a3b9bf56a91d16901293e51ba5b49a27e",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nix-systems",
+        "repo": "default",
+        "type": "github"
+      }
+    },
+    "systems_4": {
+      "locked": {
+        "lastModified": 1681028828,
+        "narHash": "sha256-Vy1rq5AaRuLzOxct8nz4T6wlgyUR7zLU309k9mBC768=",
+        "owner": "nix-systems",
+        "repo": "default",
+        "rev": "da67096a3b9bf56a91d16901293e51ba5b49a27e",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nix-systems",
+        "repo": "default",
+        "type": "github"
+      }
+    },
     "terminal-browser-flake": {
       "inputs": {
         "nixpkgs": "nixpkgs_7"
@@ -913,7 +1188,7 @@
     },
     "wezterm": {
       "inputs": {
-        "flake-utils": "flake-utils",
+        "flake-utils": "flake-utils_3",
         "freetype2": "freetype2",
         "harfbuzz": "harfbuzz",
         "libpng": "libpng",

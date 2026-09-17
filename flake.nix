@@ -40,6 +40,12 @@
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.pi-flake.follows = "pi";
     };
+    rushi-config = {
+      #url = "git+ssh://git@github.com/TonyWu20/rushi-config";
+      url = "path:/home/tony/programming/rushi-config";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.fenix.follows   = "fenix";
+    };
     sglang-flake.url = "github:TonyWu20/sglang_flake";
     terminal-browser-flake.url = "github:TonyWu20/terminal-browser-flake";
   };
@@ -58,6 +64,7 @@
     , wait-for-lsp
     , pi
     , pi-config
+    , rushi-config
     , sglang-flake
     , terminal-browser-flake
     , ...
@@ -112,6 +119,7 @@
         sops-nix.homeManagerModules.sops
         pi.homeModules.default
         (pi-config.piModules.homeManager { system = "x86_64-linux"; })
+        rushi-config.homeManagerModules.rushi
       ];
 
       # ---- Machine factory: builds a NixOS system from roles + machine-specific config ----
@@ -136,7 +144,7 @@
                   users = homeImports;
                   backupFileExtension = "backup";
                   extraSpecialArgs = {
-                    inherit inputs pi-config;
+                    inherit inputs pi-config rushi-config;
                   };
                 };
               }
