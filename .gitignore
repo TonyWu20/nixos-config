@@ -5,3 +5,4 @@ sops/*_id_ed25519
 sops/*_id_ed25519.pub
 result
 sglang-metrics/target/
+sessions/

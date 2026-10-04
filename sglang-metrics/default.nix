@@ -109,7 +109,7 @@ in
         models = [
           { id = "Qwen3.8-Flash-Next-NVFP4"; input = 0.44; output = 1.32; cacheRead = 0.014; }
           { id = "Qwen3.8-27B-NVFP4"; input = 0.44; output = 1.32; cacheRead = 0.014; }
-          { id = "Qwen3.8-27B-NVFP4-RTX5090"; input = 1.32; output = 3.96; cacheRead = 0.044; }
+          { id = "Qwen3.8-27B-NVFP4-RTX5090"; input = 0.3; output = 1.2; cacheRead = 0.006; }
           { id = "Qwen3.8-27B-DAU-IQ4"; input = 1.74; output = 3.48; cacheRead = 0.145; }
           { id = "Qwen3.8-27B-DAU-Q8_0"; input = 1.74; output = 3.48; cacheRead = 0.145; }
           { id = "Qwen3.8-27B-GGUF-DFlash2-UD-Q6_K_XL"; input = 1.74; output = 3.48; cacheRead = 0.145; }
