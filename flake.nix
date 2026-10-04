@@ -5,13 +5,16 @@
     flake-parts.url = "github:hercules-ci/flake-parts";
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     nixpkgs-stable.url = "github:NixOS/nixpkgs/nixos-24.11";
-    nvimdots = {
-      url = "github:TonyWu20/nvimdots/nix";
+    my-nvim = {
+      url = "github:TonyWu20/my-nixvim";
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.home-manager.follows = "home-manager";
     };
     catppuccin.url = "github:catppuccin/nix";
-    fenix = { url = "github:nix-community/fenix"; inputs.nixpkgs.follows = "nixpkgs"; };
+    fenix = {
+      url = "github:nix-community/fenix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     home-manager = {
       url = "github:nix-community/home-manager/master";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -42,32 +45,40 @@
     };
     rushi-config = {
       #url = "git+ssh://git@github.com/TonyWu20/rushi-config";
-      url = "path:/home/tony/programming/rushi-config";
+      # git fetcher: only tracked files are copied, .gitignore respected.
+      url = "git+file:///home/tony/programming/rushi-config";
       inputs.nixpkgs.follows = "nixpkgs";
-      inputs.fenix.follows   = "fenix";
+      inputs.fenix.follows = "fenix";
     };
     sglang-flake.url = "github:TonyWu20/sglang_flake";
     terminal-browser-flake.url = "github:TonyWu20/terminal-browser-flake";
+    tv-rushi = {
+      url = "github:TonyWu20/tv-rushi";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.fenix.follows = "fenix";
+    };
   };
 
   outputs =
-    inputs@{ self
-    , nvimdots
-    , nixpkgs
-    , nixpkgs-stable
-    , home-manager
-    , fenix
-    , catppuccin
-    , sops-nix
-    , nushell-cfg
-    , castep_job_submit
-    , wait-for-lsp
-    , pi
-    , pi-config
-    , rushi-config
-    , sglang-flake
-    , terminal-browser-flake
-    , ...
+    inputs@{
+      self,
+      my-nvim,
+      nixpkgs,
+      nixpkgs-stable,
+      home-manager,
+      fenix,
+      catppuccin,
+      sops-nix,
+      nushell-cfg,
+      castep_job_submit,
+      wait-for-lsp,
+      pi,
+      pi-config,
+      rushi-config,
+      sglang-flake,
+      terminal-browser-flake,
+      tv-rushi,
+      ...
     }:
     let
       system = "x86_64-linux";
@@ -113,17 +124,24 @@
 
       # ---- Shared home-manager modules (used by all home-manager users) ----
       homeSharedModules = [
-        nvimdots.homeManagerModules.default
+        my-nvim.homeManagerModules.default
         catppuccin.homeModules.catppuccin
         nushell-cfg.homeManagerModules.default
         sops-nix.homeManagerModules.sops
         pi.homeModules.default
         (pi-config.piModules.homeManager { system = "x86_64-linux"; })
         rushi-config.homeManagerModules.rushi
+        tv-rushi.homeManagerModules."x86_64-linux".default
       ];
 
       # ---- Machine factory: builds a NixOS system from roles + machine-specific config ----
-      mkNixosSystem = { configPath, homeImports, hostRoles ? [ ], enableFcitx5 ? true }:
+      mkNixosSystem =
+        {
+          configPath,
+          homeImports,
+          hostRoles ? [ ],
+          enableFcitx5 ? true,
+        }:
         nixpkgs.lib.nixosSystem {
           system = "x86_64-linux";
           specialArgs = { inherit inputs; };
@@ -132,7 +150,7 @@
             [
               rustToolchain
               sops-nix.nixosModules.sops
-              ({ pkgs, ... }: { nixpkgs = { inherit overlays; }; })
+              ({ ... }: { nixpkgs = { inherit overlays; }; })
               configPath
               catppuccin.nixosModules.catppuccin
               home-manager.nixosModules.home-manager
@@ -164,7 +182,10 @@
 
       devShells.${system} = {
         rs_font = pkgs.mkShell {
-          packages = with pkgs; [ stdenv fish ];
+          packages = with pkgs; [
+            stdenv
+            fish
+          ];
           buildInputs = with pkgs; [ fontconfig ];
           nativeBuildInputs = with pkgs; [ pkg-config ];
           shellHook = ''
@@ -182,7 +203,11 @@
             ./roles/head-node.nix
           ];
           homeImports = {
-            tony.imports = [ ./home/tony.nix ./nixos-main/home_ssh.nix ./nixos-main/home_wayland.nix ];
+            tony.imports = [
+              ./home/tony.nix
+              ./nixos-main/home_ssh.nix
+              ./nixos-main/home_wayland.nix
+            ];
             jerry.imports = [ ./home/jerry.nix ];
             qiuyang.imports = [ ./home/qiuyang.nix ];
           };
@@ -195,8 +220,16 @@
             ./roles/compute-node-plus.nix
           ];
           homeImports = {
-            tony.imports = [ ./home/tony-node.nix ./nixos-node1/home_ssh.nix ./nixos-node1/home_wayland.nix ];
-            jerry.imports = [ ./home/jerry.nix ./nixos-node1/home_ssh.nix ./nixos-node1/home_wayland.nix ];
+            tony.imports = [
+              ./home/tony-node.nix
+              ./nixos-node1/home_ssh.nix
+              ./nixos-node1/home_wayland.nix
+            ];
+            jerry.imports = [
+              ./home/jerry.nix
+              ./nixos-node1/home_ssh.nix
+              ./nixos-node1/home_wayland.nix
+            ];
             qiuyang.imports = [ ./home/qiuyang.nix ];
           };
         };
@@ -223,7 +256,10 @@
             ./roles/compute-node-pro5000.nix
           ];
           homeImports = {
-            tony.imports = [ ./home/tony-node.nix ./nixos-pro5000/home_ssh.nix ];
+            tony.imports = [
+              ./home/tony-node.nix
+              ./nixos-pro5000/home_ssh.nix
+            ];
           };
         };
       };
