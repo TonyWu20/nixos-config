@@ -42,6 +42,6 @@ in
   ];
   programs.rushi = {
     enable  = true;
-    package = rushi-config.packages.x86_64-linux.rushi;
+    package = rushi-config.packages.x86_64-linux.default;
   };
 }
