@@ -11,8 +11,10 @@ in
     ../wezterm
     ../tmux
     ../fish
+    ../television
     ../fcitx5/home.nix
     ../rime
+    ../mdfried
   ];
   # TODO please change the username & home directory to your own
   home.sessionVariables = {
@@ -85,7 +87,6 @@ in
     eza # A modern replacement for ‘ls’
     fzf # A command-line fuzzy finder
     zoxide
-    skim
     sad
     delta
     rsync
@@ -138,8 +139,10 @@ in
     # productivity
     glow # markdown previewer in terminal
     neomutt # email client in command line
+    mdfried
     pandoc
     terminal-browser
+    obscura
 
     iotop # io monitoring
     iftop # network monitoring
@@ -229,9 +232,12 @@ in
       {
         enable = true;
       };
+    # television config lives in the ../television module (imported above).
     fzf = {
       enable = true;
-      enableFishIntegration = true;
+      # The shell is now driven by television, so fzf's fish
+      # integration and the fzf-fish file widget are dropped.
+      # These options only shape manual `fzf` runs.
       defaultOptions = [
         "--height 80%"
         "--reverse"
@@ -240,11 +246,6 @@ in
         "--ansi"
       ];
       defaultCommand = "fd --type file -HI -E .git --color=always";
-      fileWidget.options = [
-        "--preview 'bat -n --color=always {}'"
-        "--bind 'ctrl-/:change-preview-window(down|hidden|)'"
-        "--walker-skip .git,node_modules,target"
-      ];
     };
     # starship - an customizable prompt for any shell
     bash = {

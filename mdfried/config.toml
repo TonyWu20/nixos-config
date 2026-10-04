@@ -1,0 +1,60 @@
+# mdfried configuration — Catppuccin Macchiato colorscheme
+#
+# Base generated with:  mdfried --print-config > config.toml
+# (mdfried 0.22.5; the same schema is valid for 0.2x releases).
+# The [theme] block below is recolored with the official Catppuccin
+# macchiato palette (github.com/catppuccin/palette).
+#
+# mdfried reads this file from $XDG_CONFIG_HOME/mdfried/config.toml
+# (default: ~/.config/mdfried/config.toml).
+
+font_family = "Hack Nerd Font"
+
+# --- General ---
+stdio_query_timeout_ms = 2000
+ignore_text_sizing_protocol = false
+max_image_height = 30
+watch_debounce_milliseconds = 100
+enable_mouse_capture = false
+osc8_links = true
+
+# --- Layout ---
+[padding]
+type = "centered"
+width = 100
+
+# --- Catppuccin Macchiato theme ---
+# Palette reference: https://catppuccin.com/palette/macchiato
+[theme]
+# Symbols (mdfried defaults, kept from --print-config)
+blockquote_bar = "▌ "
+link_desc_open = ""
+link_desc_close = ""
+link_url_open = "◖"
+link_url_close = "◗"
+horizontal_rule_char = "─"
+task_checked_mark = "[✓] "
+
+# Colors (Catppuccin Macchiato)
+# blockquote_colors cycles by nesting depth (6 accent colors)
+blockquote_colors = [
+  "#8AADF4",  # blue
+  "#C6A0F6",  # mauve
+  "#A6DA95",  # green
+  "#F5BDE6",  # pink
+  "#F5A97F",  # peach
+  "#ED8796",  # red
+]
+link_bg = "#494D64"            # surface1
+link_fg = "#8AADF4"           # blue
+prefix_color = "#A5ADCB"      # subtext0
+emphasis_color = "#F5A97F"    # peach
+code_bg = "#363A4F"           # surface0
+code_fg = "#B7BDF8"           # lavender
+hr_color = "#5B6078"          # surface2
+table_border_color = "#5B6078"  # surface2
+table_header_color = "#CAD3F5"  # text
+header_color = "#8AADF4"      # blue
+
+hide_urls = true
+preserve_list_ordinals = false
