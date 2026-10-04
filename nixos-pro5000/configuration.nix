@@ -28,7 +28,10 @@
     };
     firewall = {
       trustedInterfaces = [ "enp11s0" ];
-      allowedTCPPorts = [ 8000 ];
+      # NFS server: allow nfs (2049) plus lockd/nlockd (4001), mountd
+      # (4002) and statd/nstatd (4000) so the cluster clients can mount.
+      allowedTCPPorts = [ 8000 2049 4000 4001 4002 ];
+      allowedUDPPorts = [ 2049 4000 4001 4002 ];
     };
   };
 
