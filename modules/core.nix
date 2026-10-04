@@ -93,7 +93,13 @@
   services.zerotierone.enable = true;
 
   # ---- Shell & terminal ----
-  programs.fish.enable = true;
+  programs.fish = {
+    enable = true;
+    # The nixpkgs-pinned foreign-env (fenv) package uses $$kv[1] which
+    # fish 4.x removed.  Use babelfish instead to translate the NixOS
+    # shell init files to fish.
+    useBabelfish = true;
+  };
   programs.fzf.fuzzyCompletion = true;
   programs.tmux = {
     enable = true;
@@ -149,6 +155,32 @@
           ${pkgs.kbd}/bin/setleds -D +num < "$tty";
         done
       '');
+    };
+  };
+
+  # ---- Nix daemon liveness fix ----
+  # During `nixos-rebuild switch` systemd can hit an ordering cycle
+  # between nix-daemon.socket and sysinit.target and drop the socket
+  # start job, leaving the nix daemon dead.  A reboot clears it.
+  # This oneshot service makes sure the daemon is back after every
+  # activation of multi-user.target (cold boot or hot switch).
+  systemd.services."nix-daemon-restart" = {
+    description = "Ensure nix-daemon is active after multi-user.target";
+    after = [ "multi-user.target" "nix-daemon.socket" "nix-daemon.service" ];
+    wantedBy = [ "multi-user.target" ];
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = false;
+      ExecStart = ''
+        /bin/sh -c '
+          if ! systemctl is-active nix-daemon.socket 2>/dev/null; then
+            systemctl restart nix-daemon.socket
+          fi
+          if ! systemctl is-active nix-daemon.service 2>/dev/null; then
+            systemctl restart nix-daemon.service
+          fi
+        '
+      '';
     };
   };
 
