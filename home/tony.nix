@@ -1,4 +1,9 @@
-{ config, lib, pkgs, rushi-config, ... }:
+{
+  lib,
+  pkgs,
+  rushi-config,
+  ...
+}:
 let
   secretNames = [
     "poe_chatbot_api"
@@ -17,12 +22,12 @@ let
     "mineru_token"
     "hf_token"
   ];
-  apiSecrets = lib.listToAttrs (map
-    (var: {
+  apiSecrets = lib.listToAttrs (
+    map (var: {
       name = "${var}";
       value = { };
-    })
-    secretNames);
+    }) secretNames
+  );
 in
 {
   imports = [
@@ -40,8 +45,20 @@ in
   home.packages = with pkgs; [
     terminal-browser
   ];
-  programs.rushi = {
-    enable  = true;
-    package = rushi-config.packages.x86_64-linux.default;
+  programs = {
+    rushi = {
+      enable = true;
+      package = rushi-config.packages.x86_64-linux.default;
+    };
+    rushi-sessions = {
+      enable = true;
+      sourceRoots = [
+        "/export"
+        "/home/tony"
+        "nixos-pro5000:/home/tony"
+        "macm4:/Users/tony/"
+      ];
+      eventPreviewer = "mdcat --ansi";
+    };
   };
 }

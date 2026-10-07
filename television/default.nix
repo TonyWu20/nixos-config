@@ -33,7 +33,7 @@
           size = 67; # was: --preview-window right:67%
           border_type = "rounded";
           header = "{}";
-          word_wrap = true;
+          word_wrap = false;
         };
       };
 

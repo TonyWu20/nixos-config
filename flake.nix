@@ -44,9 +44,7 @@
       inputs.pi-flake.follows = "pi";
     };
     rushi-config = {
-      #url = "git+ssh://git@github.com/TonyWu20/rushi-config";
-      # git fetcher: only tracked files are copied, .gitignore respected.
-      url = "git+file:///home/tony/programming/rushi-config";
+      url = "git+ssh://git@github.com/TonyWu20/rushi-config";
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.fenix.follows = "fenix";
     };
@@ -54,6 +52,11 @@
     terminal-browser-flake.url = "github:TonyWu20/terminal-browser-flake";
     tv-rushi = {
       url = "github:TonyWu20/tv-rushi";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.fenix.follows = "fenix";
+    };
+    tv-slurm = {
+      url = "github:TonyWu20/tv-slurm";
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.fenix.follows = "fenix";
     };
@@ -78,6 +81,7 @@
       sglang-flake,
       terminal-browser-flake,
       tv-rushi,
+    tv-slurm,
       ...
     }:
     let
@@ -132,6 +136,7 @@
         (pi-config.piModules.homeManager { system = "x86_64-linux"; })
         rushi-config.homeManagerModules.rushi
         tv-rushi.homeManagerModules."x86_64-linux".default
+        tv-slurm.homeManagerModules."x86_64-linux".default
       ];
 
       # ---- Machine factory: builds a NixOS system from roles + machine-specific config ----

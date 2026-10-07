@@ -3,8 +3,7 @@
   home.username = "tony";
   home.homeDirectory = "/home/tony";
   home.sessionPath = [ "$HOME/.cargo/bin" ];
-  home.sessionVariables.SOPS_AGE_KEY_FILE =
-    "${config.home.homeDirectory}/nixos-config/sops/age/keys.txt";
+  home.sessionVariables.SOPS_AGE_KEY_FILE = "${config.home.homeDirectory}/nixos-config/sops/age/keys.txt";
 
   programs.delta = {
     enable = true;

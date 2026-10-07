@@ -140,6 +140,7 @@ in
     glow # markdown previewer in terminal
     neomutt # email client in command line
     mdfried
+    mdcat
     pandoc
     terminal-browser
     obscura
