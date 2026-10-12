@@ -161,7 +161,10 @@
           homeImports,
           hostRoles ? [ ],
           enableFcitx5 ? true,
-          homeSharedModules ? homeSharedModules,
+          # Defaults to the full set. The argument must not reuse the
+          # outer binding name: a same-name argument shadows the let
+          # binding, and the default would refer to itself.
+          sharedHomeModules ? homeSharedModules,
         }:
         nixpkgs.lib.nixosSystem {
           system = "x86_64-linux";
@@ -179,7 +182,7 @@
                 home-manager = {
                   useGlobalPkgs = true;
                   useUserPackages = true;
-                  sharedModules = homeSharedModules;
+                  sharedModules = sharedHomeModules;
                   users = homeImports;
                   backupFileExtension = "backup";
                   extraSpecialArgs = {
@@ -292,7 +295,7 @@
             ./roles/wsl.nix
           ];
           enableFcitx5 = false;
-          homeSharedModules = homeSharedModulesNoPi;
+          sharedHomeModules = homeSharedModulesNoPi;
           homeImports = {
             jojo.imports = [ ./home/jojo.nix ];
           };

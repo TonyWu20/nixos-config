@@ -23,8 +23,11 @@ for a new user `jojo`.
 - jojo uses the full standard home profile (home/default.nix), same as jerry.
   `services.udiskie` is disabled for j-wsl because there is no udisks2.
 - The shared home-manager modules for j-wsl exclude the pi stack
-  (pi, pi-config). mkNixosSystem now takes a `homeSharedModules` argument
+  (pi, pi-config). mkNixosSystem now takes a `sharedHomeModules` argument
   that defaults to the full set, so existing machines are unchanged.
+  The argument must not share the outer binding name: a same-name
+  argument shadows the let binding and the default refers to itself
+  (infinite recursion).
 - The ssh entry `j-wsl` in nixos-main/home_ssh.nix switches
   user from `nixos` to `jojo`. The nixos user stays defined on the machine.
 - `networking.hostName = "j-wsl"`. The NixOS-WSL wsl.conf hostname follows
