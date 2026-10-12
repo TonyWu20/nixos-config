@@ -1,12 +1,6 @@
 { config, ... }: {
   programs.ssh = {
     settings = {
-      mac = {
-        host = "mac";
-        user = "tonywu";
-        hostname = "10.147.17.25";
-        identityFile = config.sops.secrets."tony-ssh/ssh.key".path;
-      };
       local-mac = {
         host = "local-mac";
         user = "tonywu";
@@ -20,7 +14,6 @@
         identityFile = config.sops.secrets."tony-ssh/ssh.key".path;
       };
       mba = {
-        host = "mba";
         user = "tony";
         hostname = "10.147.17.179";
         identityFile = config.sops.secrets."tony-ssh/ssh.key".path;
@@ -51,13 +44,6 @@
         hostname = "10.0.0.6";
         identityFile = config.sops.secrets."tony-ssh/ssh.key".path;
         forwardAgent = true;
-        LocalForward = [
-          {
-            bind.port = 30000;
-            host.address = "127.0.0.1";
-            host.port = 30000;
-          }
-        ];
       };
       m4 = {
         host = "macm4";
@@ -67,16 +53,14 @@
         forwardAgent = false;
       };
       j = {
-        host = "j";
         user = "j";
         hostname = "10.147.17.49";
         identityFile = config.sops.secrets."tony-ssh/ssh.key".path;
       };
-      klt = {
-        host = "klt";
-        user = "Atoms";
-        hostname = "172.28.98.21";
-        identityFile = config.sops.secrets."tony-ssh/ssh.key".path;
+      j-wsl = {
+        user = "jojo";
+        hostname = "10.0.0.2";
+        proxyJump = "j";
       };
     };
   };

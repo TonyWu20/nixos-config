@@ -1,5 +1,33 @@
 { config, pkgs, lib, ... }:
+let
+  # Static env var exports (API base URLs, cluster-only hosts) are not
+  # needed on every machine. j-wsl disables the block.
+  staticEnvExports = config.custom.nixosConfig.fish.enableStaticEnvExports;
+  staticExportsText =
+    if staticEnvExports
+    then ''
+      set -gx POE_BASE_URL https://api.poe.com
+      set -gx YUNWU_BASE_URL https://yunwu.ai
+      set -gx FOXCODE_BASE_URL https://code.newcli.com/claude/ultra
+      set -gx XCODE_BEST_BASE_URL https://xcode.best
+      set -gx CLAUDE_BASE_URL https://claude-zhongzhuan.cloud
+      set -gx ANTHROPIC_API_KEY ""
+      set -gx ANTHROPIC_AUTH_TOKEN $DEEPSEEK_TOKEN
+      set -gx DEEPSEEK_BASE_URL https://api.deepseek.com/anthropic
+      set -gx ANTHROPIC_BASE_URL $DEEPSEEK_BASE_URL
+      set -gx DISCORD_BOT_HOST 10.0.0.5:9876
+      set -gx DISCORD_BOT_REMOTE true
+    ''
+    else "";
+in
 {
+  options.custom.nixosConfig.fish.enableStaticEnvExports = lib.mkOption {
+    type = lib.types.bool;
+    default = true;
+    description = "Export static env vars (API base URLs, cluster hosts) in the fish init";
+  };
+
+  config = {
   programs.fish = {
     enable = true;
     interactiveShellInit = builtins.concatStringsSep "\n" [
@@ -41,19 +69,9 @@
         ) envSecrets)
         }
       ''
-      ''
-        set -gx POE_BASE_URL https://api.poe.com
-        set -gx YUNWU_BASE_URL https://yunwu.ai
-        set -gx FOXCODE_BASE_URL https://code.newcli.com/claude/ultra
-        set -gx XCODE_BEST_BASE_URL https://xcode.best
-        set -gx CLAUDE_BASE_URL https://claude-zhongzhuan.cloud
-        set -gx ANTHROPIC_API_KEY ""
-        set -gx ANTHROPIC_AUTH_TOKEN $DEEPSEEK_TOKEN
-        set -gx DEEPSEEK_BASE_URL https://api.deepseek.com/anthropic
-        set -gx ANTHROPIC_BASE_URL $DEEPSEEK_BASE_URL
-        set -gx DISCORD_BOT_HOST 10.0.0.5:9876
-        set -gx DISCORD_BOT_REMOTE true
-      ''
+      # Static env var exports. Empty string on machines that disable
+      # the block (custom.nixosConfig.fish.enableStaticEnvExports).
+      staticExportsText
 
     ];
     shellAbbrs = {
@@ -94,5 +112,6 @@
     fishPlugins.forgit
     fishPlugins.fifc
   ];
+  };
 }
 

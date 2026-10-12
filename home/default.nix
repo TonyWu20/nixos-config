@@ -32,7 +32,8 @@ in
     flavor = "macchiato";
   };
   services.udiskie = {
-    enable = true;
+    # mkDefault so per-user profiles can drop it (j-wsl has no udisks2).
+    enable = lib.mkDefault true;
     settings = {
       program_options = {
         file_manager = "${pkgs.wezterm}/bin/wezterm -e ${pkgs.yazi}/bin/yazi";
@@ -179,10 +180,6 @@ in
     slurm_lammps
   ];
   programs = {
-    pi.coding-agent = {
-      enable = true;
-      package = pi-config.packages.x86_64-linux.default;
-    };
     btop = {
       enable = true;
       package = (pkgs.btop-cuda.overrideAttrs

@@ -1,5 +1,5 @@
 {
-  description = "NixOS cluster flake — 4 machines (head node + 3 compute nodes)";
+  description = "NixOS cluster flake — head node, 3 compute nodes, and j-wsl (NixOS in WSL)";
 
   inputs = {
     flake-parts.url = "github:hercules-ci/flake-parts";
@@ -59,6 +59,10 @@
       url = "github:TonyWu20/tv-slurm";
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.fenix.follows = "fenix";
+    };
+    nixos-wsl = {
+      url = "github:nix-community/NixOS-WSL";
+      inputs.nixpkgs.follows = "nixpkgs";
     };
   };
 
@@ -139,6 +143,17 @@
         tv-slurm.homeManagerModules."x86_64-linux".default
       ];
 
+      # Same set without the pi stack, for machines that do not use pi (j-wsl).
+      homeSharedModulesNoPi = [
+        my-nvim.homeManagerModules.default
+        catppuccin.homeModules.catppuccin
+        nushell-cfg.homeManagerModules.default
+        sops-nix.homeManagerModules.sops
+        rushi-config.homeManagerModules.rushi
+        tv-rushi.homeManagerModules."x86_64-linux".default
+        tv-slurm.homeManagerModules."x86_64-linux".default
+      ];
+
       # ---- Machine factory: builds a NixOS system from roles + machine-specific config ----
       mkNixosSystem =
         {
@@ -146,6 +161,7 @@
           homeImports,
           hostRoles ? [ ],
           enableFcitx5 ? true,
+          homeSharedModules ? homeSharedModules,
         }:
         nixpkgs.lib.nixosSystem {
           system = "x86_64-linux";
@@ -265,6 +281,20 @@
               ./home/tony-node.nix
               ./nixos-pro5000/home_ssh.nix
             ];
+          };
+        };
+
+        # NixOS in WSL2 on j's Windows machine (reached via proxyJump j).
+        # Single user jojo, no cluster services, no pi stack.
+        "j-wsl" = mkNixosSystem {
+          configPath = ./nixos-j-wsl/configuration.nix;
+          hostRoles = [
+            ./roles/wsl.nix
+          ];
+          enableFcitx5 = false;
+          homeSharedModules = homeSharedModulesNoPi;
+          homeImports = {
+            jojo.imports = [ ./home/jojo.nix ];
           };
         };
       };
