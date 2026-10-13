@@ -41,7 +41,7 @@ in
         "/export"
         "/home/tony"
       ];
-      eventPreviewer = "mdcat --ansi";
+      eventPreviewer = "mdcat --ansi --theme catppuccin-mocha --full-width";
     };
   };
 }

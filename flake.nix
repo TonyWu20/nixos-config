@@ -33,23 +33,16 @@
       url = "github:TonyWu20/wait-for-lsp";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    pi = {
-      url = "github:lukasl-dev/pi.nix";
-      #inputs.nixpkgs.follows = "nixpkgs";
-    };
-    pi-config = {
-      url = "git+ssh://git@github.com/TonyWu20/pi-config";
-      #url = "git+file:///home/tony/programming/pi-config";
-      inputs.nixpkgs.follows = "nixpkgs";
-      inputs.pi-flake.follows = "pi";
-    };
     rushi-config = {
       url = "git+ssh://git@github.com/TonyWu20/rushi-config";
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.fenix.follows = "fenix";
     };
     sglang-flake.url = "github:TonyWu20/sglang_flake";
-    terminal-browser-flake.url = "github:TonyWu20/terminal-browser-flake";
+    terminal-browser-flake = {
+      url = "github:TonyWu20/terminal-browser-flake";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     tv-rushi = {
       url = "github:TonyWu20/tv-rushi";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -79,8 +72,6 @@
       nushell-cfg,
       castep_job_submit,
       wait-for-lsp,
-      pi,
-      pi-config,
       rushi-config,
       sglang-flake,
       terminal-browser-flake,
@@ -136,19 +127,6 @@
         catppuccin.homeModules.catppuccin
         nushell-cfg.homeManagerModules.default
         sops-nix.homeManagerModules.sops
-        pi.homeModules.default
-        (pi-config.piModules.homeManager { system = "x86_64-linux"; })
-        rushi-config.homeManagerModules.rushi
-        tv-rushi.homeManagerModules."x86_64-linux".default
-        tv-slurm.homeManagerModules."x86_64-linux".default
-      ];
-
-      # Same set without the pi stack, for machines that do not use pi (j-wsl).
-      homeSharedModulesNoPi = [
-        my-nvim.homeManagerModules.default
-        catppuccin.homeModules.catppuccin
-        nushell-cfg.homeManagerModules.default
-        sops-nix.homeManagerModules.sops
         rushi-config.homeManagerModules.rushi
         tv-rushi.homeManagerModules."x86_64-linux".default
         tv-slurm.homeManagerModules."x86_64-linux".default
@@ -186,7 +164,7 @@
                   users = homeImports;
                   backupFileExtension = "backup";
                   extraSpecialArgs = {
-                    inherit inputs pi-config rushi-config;
+                    inherit inputs rushi-config;
                   };
                 };
               }
@@ -295,7 +273,6 @@
             ./roles/wsl.nix
           ];
           enableFcitx5 = false;
-          sharedHomeModules = homeSharedModulesNoPi;
           homeImports = {
             jojo.imports = [ ./home/jojo.nix ];
           };

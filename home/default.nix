@@ -1,8 +1,15 @@
-{ pkgs, inputs, lib, pi-config, ... }:
+{
+  pkgs,
+  inputs,
+  lib,
+  ...
+}:
 let
   fetch_pot = inputs.castep_job_submit.packages.x86_64-linux.default;
   slurm_job = pkgs.writeShellScriptBin "slurm_job.sh" (builtins.readFile ../slurm/slurm_job.sh);
-  slurm_lammps = pkgs.writeShellScriptBin "slurm_lammps.sh" (builtins.readFile ../slurm/slurm_lammps.sh);
+  slurm_lammps = pkgs.writeShellScriptBin "slurm_lammps.sh" (
+    builtins.readFile ../slurm/slurm_lammps.sh
+  );
 in
 {
   imports = [
@@ -24,7 +31,6 @@ in
   home.sessionPath = [
     "$HOME/.cargo/bin/"
   ];
-
 
   catppuccin = {
     autoEnable = true;
@@ -95,8 +101,6 @@ in
     pkg-config
 
     tree-sitter
-    (python313.withPackages
-      (ps: with ps;[ ps.pynvim huggingface-hub ]))
 
     # fonts
     fontconfig
@@ -112,7 +116,6 @@ in
 
     # Self-packaged CASTEP v25.1.2
     #castep_25_12
-
 
     # networking tools
     aria2 # A lightweight multi-protocol & multi-source command-line download utility
@@ -182,10 +185,11 @@ in
   programs = {
     btop = {
       enable = true;
-      package = (pkgs.btop-cuda.overrideAttrs
-        (old: {
+      package = (
+        pkgs.btop-cuda.overrideAttrs (old: {
           cmakeFlags = old.cmakeFlags ++ [ (lib.cmakeBool "BTOP_GPU" true) ];
-        })) # replacement of htop/nmon
+        })
+      ) # replacement of htop/nmon
       ;
     };
 
@@ -194,16 +198,21 @@ in
       shellWrapperName = "y";
       settings = {
         plugins = {
-          prepend_previewers = [{
-            mime = "image/tiff";
-            run = "magick";
-          }
+          prepend_previewers = [
+            {
+              mime = "image/tiff";
+              run = "magick";
+            }
             {
               name = "*.tif";
               run = "magick";
-            }];
+            }
+          ];
           prepend_preloaders = [
-            { mime = "image/tiff"; run = "magick"; }
+            {
+              mime = "image/tiff";
+              run = "magick";
+            }
           ];
         };
       };
@@ -226,10 +235,9 @@ in
       # forwardAgent = true;
       # addKeysToAgent = "yes";
     };
-    bat =
-      {
-        enable = true;
-      };
+    bat = {
+      enable = true;
+    };
     # television config lives in the ../television module (imported above).
     fzf = {
       enable = true;
