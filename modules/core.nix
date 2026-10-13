@@ -14,8 +14,9 @@
     config = {
       allowUnfree = true;
       cudaSupport = true;
+      # The cluster cards are Pascal (sm_61). CUDA 13 dropped Pascal, so
+      # the cluster stays on CUDA 12.
       cudaCapabilities = [ "6.1" ];
-      cudaVersion = "12.9";
     };
     overlays = [
       inputs.fenix.overlays.default
@@ -29,6 +30,18 @@
             };
           });
         });
+      })
+      # nixpkgs 26.11 rewrote the CUDA package sets. The default set
+      # (pkgs.cudaPackages) is now CUDA 13.x, and its backendStdenv
+      # asserts that the requested cudaCapabilities are supported by
+      # that version. CUDA 13 does not support Pascal (sm_61), so on
+      # this cluster the default set must be the CUDA 12.9 set. Without
+      # this, every package that builds against the default CUDA set
+      # fails with "Requested CUDA capabilities which are too old for
+      # CUDA 13.4: ["6.1"]".
+      (final: prev: {
+        cudaPackages = prev.lib.recurseIntoAttrs prev.cudaPackages_12_9;
+        cudaPackages_12 = prev.cudaPackages_12_9;
       })
     ];
   };
