@@ -87,6 +87,7 @@
         fenix.overlays.default
         wait-for-lsp.overlays.default
         (import ./overlays/llama-cpp-dflash2.nix)
+        (import ./overlays/tmux.nix)
         #(final: prev: {
         #  python3 = final.python313;
         #  python3Packages = final.python313Packages;
