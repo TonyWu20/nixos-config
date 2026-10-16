@@ -111,6 +111,7 @@ in
     fishPlugins.bass
     fishPlugins.forgit
     fishPlugins.fifc
+    python314
   ];
   };
 }
