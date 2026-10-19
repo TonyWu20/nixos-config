@@ -390,11 +390,11 @@
         "nixvim": "nixvim"
       },
       "locked": {
-        "lastModified": 1792436696,
-        "narHash": "sha256-46EoThyI1uwT1Y3JSC/1fD0arbM2o7M9pveOz4Dn5jc=",
+        "lastModified": 1792443490,
+        "narHash": "sha256-mKk8pIkAENbHDxt+MIiv5BSfAXn2/12nwiC/8eYDzhM=",
         "owner": "TonyWu20",
         "repo": "my-nixvim",
-        "rev": "97303adcb8a1fbd6f87100cef10c3f362e2d2ae2",
+        "rev": "9ae67afcfd34871f6fae2c0e2877dfb0c67d9d1b",
         "type": "github"
       },
       "original": {
