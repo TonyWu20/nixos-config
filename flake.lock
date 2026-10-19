@@ -1584,11 +1584,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1792411906,
-        "narHash": "sha256-ekZRLZvjNSu5YrnZgopckCAqAa/GO0OXsTdrGp0sSbI=",
+        "lastModified": 1792429075,
+        "narHash": "sha256-Mlk74GYs4mqdDVwgksIUzbMUDslyU/qZ2U/aQYH5Jtk=",
         "owner": "TonyWu20",
         "repo": "tv-rushi",
-        "rev": "bc47398f21c83d513e059248e65adff8bfb9caa5",
+        "rev": "f0c70a8abb607508f962b13e8c1c570105b2846c",
         "type": "github"
       },
       "original": {
