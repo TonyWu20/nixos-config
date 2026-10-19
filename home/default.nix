@@ -10,6 +10,7 @@ let
   slurm_lammps = pkgs.writeShellScriptBin "slurm_lammps.sh" (
     builtins.readFile ../slurm/slurm_lammps.sh
   );
+  rushi-ste = inputs.rushi-ste.packages.x86_64-linux.rushi-ste;
 in
 {
   imports = [
@@ -177,10 +178,10 @@ in
     fortls
 
     # texlive later
-    alacritty
     fetch_pot
     slurm_job
     slurm_lammps
+    rushi-ste
   ];
   programs = {
     btop = {

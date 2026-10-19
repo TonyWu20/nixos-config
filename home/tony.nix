@@ -59,6 +59,7 @@ in
         "macm4:/Users/tony/"
       ];
       eventPreviewer = "mdcat --ansi --theme catppuccin-mocha --full-width";
+      eventViewer = "mdfried";
     };
   };
 }

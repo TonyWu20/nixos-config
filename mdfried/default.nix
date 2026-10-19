@@ -8,7 +8,7 @@
 #   catppuccin.mdfried.enable = true;
 #   catppuccin.mdfried.flavor = "macchiato";
 # and delete this module.
-{ ... }:
+{  ... }:
 
 {
   home.file.".config/mdfried/config.toml".source = ./config.toml;

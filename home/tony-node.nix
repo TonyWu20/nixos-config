@@ -42,6 +42,7 @@ in
         "/home/tony"
       ];
       eventPreviewer = "mdcat --ansi --theme catppuccin-mocha --full-width";
+      eventViewer = "mdfried";
     };
   };
 }

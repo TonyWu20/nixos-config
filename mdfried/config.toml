@@ -12,7 +12,7 @@ font_family = "Hack Nerd Font"
 
 # --- General ---
 stdio_query_timeout_ms = 2000
-ignore_text_sizing_protocol = false
+ignore_text_sizing_protocol = true
 max_image_height = 30
 watch_debounce_milliseconds = 100
 enable_mouse_capture = false
@@ -21,7 +21,7 @@ osc8_links = true
 # --- Layout ---
 [padding]
 type = "centered"
-width = 100
+width = 200
 
 # --- Catppuccin Macchiato theme ---
 # Palette reference: https://catppuccin.com/palette/macchiato
@@ -55,6 +55,6 @@ hr_color = "#5B6078"          # surface2
 table_border_color = "#5B6078"  # surface2
 table_header_color = "#CAD3F5"  # text
 header_color = "#8AADF4"      # blue
-
+mermaid = true
 hide_urls = true
 preserve_list_ordinals = false
