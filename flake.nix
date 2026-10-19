@@ -38,6 +38,11 @@
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.fenix.follows = "fenix";
     };
+    rushi-ste = {
+      url = "github:TonyWu20/rushi-simple-english";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.fenix.follows = "fenix";
+    };
     sglang-flake.url = "github:TonyWu20/sglang_flake";
     terminal-browser-flake = {
       url = "github:TonyWu20/terminal-browser-flake";
@@ -76,7 +81,8 @@
       sglang-flake,
       terminal-browser-flake,
       tv-rushi,
-    tv-slurm,
+      tv-slurm,
+      rushi-ste,
       ...
     }:
     let
