@@ -48,7 +48,7 @@ in
   programs = {
     rushi = {
       enable = true;
-      package = rushi-config.packages.x86_64-linux.default;
+      #package = rushi-config.packages.x86_64-linux.default;
     };
     rushi-sessions = {
       enable = true;
@@ -60,6 +60,7 @@ in
       ];
       eventPreviewer = "mdcat --ansi --theme catppuccin-mocha --full-width";
       eventViewer = "mdfried";
+      sessionsPreviewer = "mdcat --ansi --theme catppuccin-mocha --full-width";
     };
   };
 }

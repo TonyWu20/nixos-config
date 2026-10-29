@@ -33,7 +33,6 @@ in
     };
     rushi = {
       enable = true;
-      package = rushi-config.packages.x86_64-linux.default;
     };
     rushi-sessions = {
       enable = true;
@@ -42,6 +41,7 @@ in
         "/home/tony"
       ];
       eventPreviewer = "mdcat --ansi --theme catppuccin-mocha --full-width";
+      sessionPreviewer = "mdcat --ansi --theme catppuccin-mocha --full-width";
       eventViewer = "mdfried";
     };
   };
