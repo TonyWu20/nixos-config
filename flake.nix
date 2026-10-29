@@ -34,7 +34,7 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     rushi-config = {
-      url = "git+ssh://git@github.com/TonyWu20/rushi-config";
+      url = "github:TonyWu20/my-rushi-config";
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.fenix.follows = "fenix";
     };
@@ -134,7 +134,7 @@
         catppuccin.homeModules.catppuccin
         nushell-cfg.homeManagerModules.default
         sops-nix.homeManagerModules.sops
-        rushi-config.homeManagerModules.rushi
+        rushi-config.homeManagerModules.default
         tv-rushi.homeManagerModules."x86_64-linux".default
         tv-slurm.homeManagerModules."x86_64-linux".default
       ];
