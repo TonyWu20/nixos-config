@@ -11,15 +11,15 @@
   services.nfs.server = {
     enable = true;
     exports = ''
-      /home/tony/nfs 10.0.0.2(rw,fsid=0,no_subtree_check,insecure,all_squash,anonuid=1000,anongid=1000) 10.0.0.3(rw,fsid=0,no_subtree_check,insecure,all_squash,anonuid=1000,anongid=1000) 10.0.0.4(rw,fsid=0,no_subtree_check,insecure,all_squash,anonuid=1000,anongid=1000)
-      /home/tony/nfs/castep_jobs 10.0.0.2(rw,no_subtree_check,insecure,nohide,all_squash,anonuid=1000,anongid=1000) 10.0.0.3(rw,no_subtree_check,insecure,nohide,all_squash,anonuid=1000,anongid=1000) 10.0.0.4(rw,no_subtree_check,insecure,nohide,all_squash,anonuid=1000,anongid=1000)
-      /home/tony/nfs/gauss_shell 10.0.0.2(rw,nohide,insecure,no_subtree_check,all_squash,anonuid=1000,anongid=1000) 10.0.0.3(rw,nohide,insecure,no_subtree_check,all_squash,anonuid=1000,anongid=1000) 10.0.0.4(rw,nohide,insecure,no_subtree_check,all_squash,anonuid=1000,anongid=1000)
-      /home/tony/nfs/g16 10.0.0.2(rw,nohide,insecure,no_subtree_check,all_squash,anonuid=1000,anongid=1000) 10.0.0.3(rw,nohide,insecure,no_subtree_check,all_squash,anonuid=1000,anongid=1000) 10.0.0.4(rw,nohide,insecure,no_subtree_check,all_squash,anonuid=1000,anongid=1000)
-      /home/tony/nfs/gaussian_jobs 10.0.0.2(rw,nohide,insecure,no_subtree_check,all_squash,anonuid=1000,anongid=1000) 10.0.0.3(rw,nohide,insecure,no_subtree_check,all_squash,anonuid=1000,anongid=1000) 10.0.0.4(rw,nohide,insecure,no_subtree_check,all_squash,anonuid=1000,anongid=1000)
-      /home/tony/nfs/Potentials 10.0.0.2(rw,no_subtree_check,insecure,nohide,all_squash,anonuid=1000,anongid=1000) 10.0.0.3(rw,no_subtree_check,insecure,nohide,all_squash,anonuid=1000,anongid=1000) 10.0.0.4(rw,no_subtree_check,insecure,nohide,all_squash,anonuid=1000,anongid=1000)
-      /home/tony/nfs/public_castep_jobs 10.0.0.2(rw,nohide,insecure,no_subtree_check,all_squash,anonuid=1000,anongid=1000) 10.0.0.3(rw,nohide,insecure,no_subtree_check,all_squash,anonuid=1000,anongid=1000) 10.0.0.4(rw,nohide,insecure,no_subtree_check,all_squash,anonuid=1000,anongid=1000)
-      /home/tony/nfs/lammps_jobs 10.0.0.2(rw,nohide,insecure,no_subtree_check,all_squash,anonuid=1000,anongid=1000) 10.0.0.3(rw,nohide,insecure,no_subtree_check,all_squash,anonuid=1000,anongid=1000) 10.0.0.4(rw,nohide,insecure,no_subtree_check,all_squash,anonuid=1000,anongid=1000)
-      /home/tony/nfs/castep-rust-eigensolve 10.0.0.2(rw,no_subtree_check,insecure,nohide,all_squash,anonuid=1000,anongid=1000) 10.0.0.3(rw,no_subtree_check,insecure,nohide,all_squash,anonuid=1000,anongid=1000) 10.0.0.4(rw,no_subtree_check,insecure,nohide,all_squash,anonuid=1000,anongid=1000)
+      /home/tony/nfs *(rw,fsid=0,no_subtree_check,insecure,all_squash,anonuid=1000,anongid=1000)
+      /home/tony/nfs/castep_jobs *(rw,no_subtree_check,insecure,nohide,all_squash,anonuid=1000,anongid=1000)
+      /home/tony/nfs/gauss_shell *(rw,nohide,insecure,no_subtree_check,all_squash,anonuid=1000,anongid=1000)
+      /home/tony/nfs/g16 *(rw,nohide,insecure,no_subtree_check,all_squash,anonuid=1000,anongid=1000)
+      /home/tony/nfs/gaussian_jobs *(rw,nohide,insecure,no_subtree_check,all_squash,anonuid=1000,anongid=1000)
+      /home/tony/nfs/Potentials *(rw,no_subtree_check,insecure,nohide,all_squash,anonuid=1000,anongid=1000)
+      /home/tony/nfs/public_castep_jobs *(rw,nohide,insecure,no_subtree_check,all_squash,anonuid=1000,anongid=1000)
+      /home/tony/nfs/lammps_jobs *(rw,nohide,insecure,no_subtree_check,all_squash,anonuid=1000,anongid=1000)
+      /home/tony/nfs/castep-rust-eigensolve *(rw,no_subtree_check,insecure,nohide,all_squash,anonuid=1000,anongid=1000)
     '';
     lockdPort = 4001;
     mountdPort = 4002;
