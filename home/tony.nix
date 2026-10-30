@@ -58,9 +58,9 @@ in
         "nixos-pro5000:/home/tony"
         "macm4:/Users/tony/"
       ];
-      eventPreviewer = "mdcat --ansi --theme catppuccin-mocha --full-width";
-      eventViewer = "mdfried";
-      sessionsPreviewer = "mdcat --ansi --theme catppuccin-mocha --full-width";
+      eventPreviewer = "mdcat --ansi --theme catppuccin-mocha --columns 104";
+      eventViewer = "mdless --ansi --theme catppuccin-mocha --full-width";
+      sessionPreviewer = "mdcat --ansi --theme catppuccin-mocha --columns 170";
     };
   };
 }
