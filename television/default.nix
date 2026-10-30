@@ -1,5 +1,10 @@
 { pkgs, ... }:
 {
+  imports = [
+    # fixed fish-history cable; merged into programs.television.channels
+    ./fish-history.nix
+  ];
+
   # television replaces the jethrokuan/fzf fish plugin as the shell fuzzy
   # finder.  Its fish integration (share/television/completion.fish) binds:
   #   ctrl-t  smart autocompletion (files/dirs channels)
@@ -42,6 +47,8 @@
         # mirrors the old fzf-fish preview-window toggle
         "ctrl-d" = "scroll_preview_half_page_down";
         "ctrl-u" = "scroll_preview_half_page_up";
+        "ctrl-alt-j" = "scroll_preview_down";
+        "ctrl-alt-k" = "scroll_preview_up";
       };
 
       # shell integration: route the current prompt command to a channel
